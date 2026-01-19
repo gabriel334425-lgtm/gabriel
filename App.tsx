@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Lenis from 'lenis';
 import { Canvas } from '@react-three/fiber';
-import { Menu, Phone, Mail, ArrowRight, MessageCircle } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
-import { Hero, Experience, Values, SelectedWorks, Marquee, VisualDesign, Showreel } from './components/Sections';
+import Hero from './components/Hero';
+import { Experience, Values, SelectedWorks, Marquee, VisualDesign, Showreel } from './components/Sections';
 import Modal from './components/Modal';
-import { FooterSmiley } from './components/SceneElements';
-import { Preloader, CustomCursor, LayoutGrid, MouseTrail } from './components/UI';
+import Header from './components/Header';
+import { HeroModel, ParticleBackground } from './components/SceneElements';
+import { LayoutGrid, CustomCursor } from './components/UI';
 import { ExperienceItem, ProjectItem, FlagshipDetails } from './types';
 
-// --- Data ---
 const experienceData: ExperienceItem[] = [
   {
     period: "2020 - 2025",
@@ -37,245 +38,133 @@ const experienceData: ExperienceItem[] = [
 ];
 
 const worksData: ProjectItem[] = [
-  { 
-      id: 'stzb', 
-      title: '率土之滨', 
-      subtitle: '地域服营销 · 增长策略', 
-      tags: ['Strategy', 'Design'], 
-      imageUrl: 'https://picsum.photos/800/450?random=1',
-      videoUrl: 'https://videos.pexels.com/video-files/3129671/3129671-hd_1920_1080_30fps.mp4' 
-  },
-  { 
-      id: 'racing', 
-      title: '巅峰极速', 
-      subtitle: 'AI应用 · 降本增效', 
-      tags: ['AI Workflow', 'Visuals'], 
-      imageUrl: 'https://picsum.photos/800/450?random=2',
-      videoUrl: 'https://videos.pexels.com/video-files/853800/853800-hd_1920_1080_25fps.mp4'
-  },
-  { 
-      id: 'knives', 
-      title: '荒野行动', 
-      subtitle: '电竞赛事视觉重构', 
-      tags: ['Esports', 'Branding'], 
-      imageUrl: 'https://picsum.photos/800/450?random=3',
-      videoUrl: 'https://videos.pexels.com/video-files/4443653/4443653-hd_1920_1080_30fps.mp4'
-  },
-  { 
-      id: 'lostlight', 
-      title: '萤火突击', 
-      subtitle: 'S级项目全案发行', 
-      tags: ['Full Case', 'Launch'], 
-      imageUrl: 'https://picsum.photos/800/450?random=4',
-      videoUrl: 'https://videos.pexels.com/video-files/5532772/5532772-hd_1920_1080_25fps.mp4'
-  },
+  { id: 'stzb', title: '率土之滨', subtitle: '地域服营销 · 增长策略', tags: ['Strategy', 'Design'], imageUrl: 'https://picsum.photos/800/450?random=1' },
+  { id: 'racing', title: '巅峰极速', subtitle: 'AI应用 · 降本增效', tags: ['AI Workflow', 'Visuals'], imageUrl: 'https://picsum.photos/800/450?random=2' },
+  { id: 'knives', title: '荒野行动', subtitle: '电竞赛事视觉重构', tags: ['Esports', 'Branding'], imageUrl: 'https://picsum.photos/800/450?random=3' },
+  { id: 'lostlight', title: '萤火突击', subtitle: 'S级项目全案发行', tags: ['Full Case', 'Launch'], imageUrl: 'https://picsum.photos/800/450?random=4' },
 ];
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeProject, setActiveProject] = useState<FlagshipDetails | null>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const [flagshipHovered, setFlagshipHovered] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const flagshipVideoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        gestureOrientation: 'vertical',
+        smoothWheel: true,
+    });
+    function raf(time: number) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+    return () => lenis.destroy();
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+      const move1 = { x: x * -25, y: y * -25 };
+      const move2 = { x: x * -12, y: y * -12 };
+      const move3 = { x: x * -6, y: y * -6 };
+      containerRef.current.style.backgroundPosition = `
+        calc(0px + ${move1.x}px) calc(0px + ${move1.y}px),
+        calc(40px + ${move2.x}px) calc(60px + ${move2.y}px),
+        calc(130px + ${move3.x}px) calc(270px + ${move3.y}px)
+      `;
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
   const toggleAudio = () => {
-      if (audioRef.current) {
-          if (isMuted) {
-              audioRef.current.play().catch(e => console.log('Audio blocked', e));
-          } else {
-              audioRef.current.pause();
-          }
-          setIsMuted(!isMuted);
+    if (audioRef.current) {
+      if (isMuted) {
+        audioRef.current.play().catch(e => console.log('Audio blocked', e));
+      } else {
+        audioRef.current.pause();
       }
-  };
-
-  const handleFlagshipMouseEnter = () => {
-    setFlagshipHovered(true);
-    if (flagshipVideoRef.current) {
-        flagshipVideoRef.current.currentTime = 0;
-        flagshipVideoRef.current.play().catch(e => console.log('Autoplay blocked', e));
-    }
-  };
-
-  const handleFlagshipMouseLeave = () => {
-    setFlagshipHovered(false);
-    if (flagshipVideoRef.current) {
-        flagshipVideoRef.current.pause();
+      setIsMuted(!isMuted);
     }
   };
 
   const handleOpenProject = (id: string) => {
     const project = worksData.find(p => p.id === id);
     if (!project) return;
-
-    const contentMap: Record<string, React.ReactNode> = {
-        'lostlight': (
-            <div className="space-y-12">
-                <div className="border-l-4 border-accent pl-6">
-                    <p className="text-xl font-bold mb-6">项目深度解析</p>
-                    <p className="text-gray-400 text-lg leading-relaxed">
-                        作为S级项目，萤火突击面临红海市场竞争激烈的挑战。我主导了从“定义战场”的差异化定位，到上市爆发期的视觉蓝图构建。
-                    </p>
-                </div>
-                <div className="grid md:grid-cols-3 gap-6">
-                     <div className="bg-white/5 p-6 rounded border border-white/10">
-                        <h4 className="text-accent font-bold mb-2">01. 策略</h4>
-                        <p className="text-sm text-gray-400">挖掘"策略射击"与"爽快出金"的核心卖点。</p>
-                     </div>
-                     <div className="bg-white/5 p-6 rounded border border-white/10">
-                        <h4 className="text-accent font-bold mb-2">02. 视觉</h4>
-                        <p className="text-sm text-gray-400">建立完整的VI System，确保全渠道视觉统一。</p>
-                     </div>
-                     <div className="bg-white/5 p-6 rounded border border-white/10">
-                        <h4 className="text-accent font-bold mb-2">03. 运营</h4>
-                        <p className="text-sm text-gray-400">搭建AIGC工作流，赋能长线内容产出。</p>
-                     </div>
-                </div>
-                <img src="https://picsum.photos/1200/600?random=10" className="w-full rounded-lg opacity-80" alt="Case Detail" />
-            </div>
-        )
-    };
-
     setActiveProject({
         id: project.id,
         title: project.title,
         role: "Lead Designer / Art Direction",
-        content: contentMap[id] || (
-            <div className="flex flex-col items-center justify-center py-20">
-                <p className="text-gray-500">Project details loading or under NDA.</p>
-                <p className="text-gray-600 text-sm mt-2">ID: {id}</p>
-            </div>
-        )
+        content: <div className="py-20 text-center text-white/40 font-mono text-sm tracking-widest uppercase">Project details loading...</div>
     });
     setModalOpen(true);
   };
 
   return (
-    <div className="bg-dark text-white min-h-screen selection:bg-accent selection:text-white">
-      <CustomCursor />
-      <MouseTrail />
+    <div 
+      ref={containerRef}
+      className="min-h-screen selection:bg-white selection:text-black w-full overflow-hidden text-white font-sans relative"
+      style={{
+        backgroundColor: '#000',
+        backgroundImage: `
+          radial-gradient(white 1.5px, transparent 2px), 
+          radial-gradient(rgba(255,255,255,0.6) 1.5px, transparent 2px),
+          radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1.5px)
+        `,
+        backgroundSize: '550px 550px, 350px 350px, 250px 250px',
+        backgroundPosition: '0 0, 40px 60px, 130px 270px',
+        boxShadow: 'inset 0 0 200px rgba(0,0,0,0.8)',
+        transition: 'background-position 0.15s ease-out'
+      }}
+    >
+      <ParticleBackground />
       <LayoutGrid />
+      <CustomCursor />
       
-      {/* Background Audio */}
       <audio ref={audioRef} loop src="https://assets.mixkit.co/music/preview/mixkit-sci-fi-drone-ambience-2708.mp3" />
 
-      <AnimatePresence mode="wait">
-        {loading && <Preloader onComplete={() => setLoading(false)} />}
-      </AnimatePresence>
-      
-      {/* --- Navigation --- */}
-      <nav className={`fixed top-0 w-full z-40 px-4 md:px-8 py-6 flex justify-between items-center transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-md py-4 border-b border-white/5' : 'bg-transparent'}`}>
-        <a href="#" className="font-black text-2xl tracking-tighter hover:text-white transition-colors mix-blend-overlay text-white cursor-hover" data-cursor="link">GYF.</a>
+      {/* Modified: Header uses Framer Motion spring entry */}
+      <motion.div
+        className="fixed top-0 left-0 w-full z-50 pointer-events-none"
+        initial={{ opacity: 0, y: -20 }}
+        animate={!loading ? { opacity: 1, y: 0 } : {}}
+        transition={{ 
+            type: "spring", 
+            stiffness: 80, 
+            damping: 15, 
+            delay: 0.05 // Slight delay to sync with bottom UI but appear Top-Down
+        }}
+      >
+         <div className="pointer-events-auto">
+            <Header isMuted={isMuted} onToggleAudio={toggleAudio} />
+         </div>
+      </motion.div>
+
+      <main className="relative z-10 w-full text-start flex flex-col items-start">
+        <Hero onLoadingComplete={() => setLoading(false)} />
         
-        <div className="hidden md:flex gap-8 text-xs font-bold tracking-widest bg-black/40 backdrop-blur-md px-8 py-3 rounded-full border border-white/10">
-            <a href="#" className="hover:text-accent text-white transition-colors cursor-hover" data-cursor="link">简历</a>
-            <a href="#experience" className="hover:text-accent text-white transition-colors cursor-hover" data-cursor="link">经历</a>
-            <a href="#value" className="hover:text-accent text-white transition-colors cursor-hover" data-cursor="link">价值</a>
-            <a href="#flagship" className="hover:text-accent text-white transition-colors cursor-hover" data-cursor="link">案例</a>
-            <a href="#works" className="hover:text-accent text-white transition-colors cursor-hover" data-cursor="link">视觉</a>
-        </div>
-
-        <div className="flex items-center gap-4">
-             {/* Audio Toggle - Text Only */}
-             <button 
-                onClick={toggleAudio}
-                className="text-xs font-mono font-bold uppercase tracking-wider text-gray-400 hover:text-white transition-colors cursor-hover w-[120px] text-right"
-                data-cursor="link"
-             >
-                 {isMuted ? "SOUND NO (OFF)" : "SOUND ON"}
-             </button>
-
-             <button className="md:hidden text-white cursor-hover"><Menu /></button>
-             
-             <div className="hidden md:flex items-center gap-2">
-                 <button className="p-2 bg-white/5 rounded-full hover:bg-accent transition-all duration-300 group cursor-hover border border-white/10" title="WeChat" data-cursor="link">
-                    <MessageCircle size={18} className="text-white" />
-                 </button>
-                 <a href="tel:18390810208" className="p-2 bg-white/5 rounded-full hover:bg-accent transition-all duration-300 group cursor-hover border border-white/10" title="Call Me" data-cursor="link">
-                    <Phone size={18} className="text-white" />
-                 </a>
-                 <a href="mailto:408179683@qq.com" className="p-2 bg-white/5 rounded-full hover:bg-accent transition-all duration-300 group cursor-hover border border-white/10" title="Email Me" data-cursor="link">
-                    <Mail size={18} className="text-white" />
-                 </a>
-             </div>
-        </div>
-      </nav>
-
-      <main className="relative z-10">
-        <Hero />
         <Experience items={experienceData} />
         <Marquee />
         <Values />
         
-        {/* Flagship Section - Updated Hierarchy */}
-        <section id="flagship" className="relative w-full h-screen overflow-hidden group" data-cursor="video">
-             <div 
-                className="absolute inset-0 w-full h-full cursor-pointer"
-                onClick={() => handleOpenProject('lostlight')}
-                onMouseEnter={handleFlagshipMouseEnter}
-                onMouseLeave={handleFlagshipMouseLeave}
-             >
-                 {/* Static Background Image */}
-                 <img 
-                    src="https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/H75-1.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vSDc1LTEuanBnIiwiaWF0IjoxNzY1NDQ0NTkzLCJleHAiOjE3OTY5ODA1OTN9.h_Yb-KOlcVjdWEMKk1KORtrVlp0yfw-M62Lv-J0QUFE" 
-                    className={`absolute inset-0 w-full h-full object-cover transition duration-1000 ${flagshipHovered ? 'scale-105 opacity-0' : 'scale-100 opacity-100'}`} 
-                    alt="Flagship Case - Lost Light" 
-                 />
-                 {/* Video Background */}
-                 <video
-                    ref={flagshipVideoRef}
-                    src="https://videos.pexels.com/video-files/5532772/5532772-hd_1920_1080_25fps.mp4"
-                    muted
-                    loop
-                    playsInline
-                    preload="none"
-                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${flagshipHovered ? 'opacity-100' : 'opacity-0'}`}
-                />
-                
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90"></div>
-
-                {/* Content - Bottom Left, Left Aligned */}
-                <div className="absolute top-0 left-0 w-full h-full p-8 md:p-16 lg:p-24 flex flex-col justify-end items-start z-10">
-                    {/* Top Label - Absolute relative to container */}
-                    <div className="absolute top-24 left-8 md:left-24 flex items-center gap-4">
-                        <span className="text-white/60 text-xs font-mono uppercase tracking-wide">NETEASE GAMES / S-TIER</span>
-                    </div>
-
-                    {/* Main Title: "Flagship Case" in Chinese, Large Size */}
-                    <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-4 text-left">
-                        旗舰案例
-                    </h2>
-
-                    {/* Subtitle: "Firefly Assault", Smaller Size */}
-                    <h3 className="text-4xl md:text-6xl font-bold text-white tracking-tighter mb-8 leading-[0.9] hover:text-accent transition-colors text-left">
-                        萤火突击
-                    </h3>
-                    
-                    <div className="max-w-xl border-l-2 border-accent pl-6 text-left">
-                        <p className="text-gray-300 text-lg md:text-xl font-light leading-relaxed mb-6">
-                            本案例将完整展示我如何深度介入产品前端，系统性规划上市打法，高标准落地创意内容，并前瞻性布局长线运营。
-                        </p>
-                        
-                        {/* Chinese Keywords */}
-                        <div className="flex flex-wrap gap-3 mb-6">
-                             {['策略射击', '全案营销', '视觉体系', 'AIGC工作流'].map(tag => (
-                                 <span key={tag} className="border border-white/20 px-3 py-1 text-xs text-gray-400 rounded-full">{tag}</span>
-                             ))}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-accent text-sm font-bold tracking-widest uppercase hover:text-white transition-colors">
-                            Click to Explore <ArrowRight size={16} />
-                        </div>
+        <section id="flagship" className="relative w-full h-[80vh] overflow-hidden group border-y border-white/5" data-cursor="video">
+             <div className="absolute inset-0 w-full h-full cursor-pointer" onClick={() => handleOpenProject('lostlight')}>
+                 <img src="https://picsum.photos/1920/1080?random=5" className="absolute inset-0 w-full h-full object-cover opacity-40 transition-transform duration-1000 group-hover:scale-105" alt="Flagship" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-[#020204] via-transparent to-[#020204]/40"></div>
+                 <div className="absolute top-0 left-0 w-full h-full px-[4vw] flex flex-col justify-center pt-32 items-start z-10">
+                    <span className="text-white/40 text-[10px] font-mono uppercase tracking-[6px] mb-4">S-TIER FLAGSHIP CASE</span>
+                    <h2 className="text-[clamp(3rem,8vw,8rem)] font-black text-white tracking-tighter leading-none mb-8 italic uppercase drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]">萤火突击</h2>
+                    <div className="max-w-xl border-l-4 border-white/20 pl-6">
+                        <p className="text-white/70 text-[clamp(1rem,1.5vw,1.25rem)] font-light leading-relaxed mb-6">本案例展示如何通过标准化的视觉规范与前置 AIGC 工作流，重构 S 级项目的创作效能。</p>
                     </div>
                 </div>
              </div>
@@ -286,58 +175,44 @@ const App: React.FC = () => {
         <Showreel />
       </main>
 
-      {/* --- Footer --- */}
-      <footer id="contact" className="bg-white text-dark py-24 px-6 md:px-12 lg:px-24 relative overflow-hidden border-t border-gray-200">
-        <div className="max-w-[1920px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
+      <footer id="contact" className="bg-[#020204]/50 backdrop-blur-sm text-white py-32 px-[4vw] relative overflow-hidden border-t border-white/10 w-full">
+        {/* Footer content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 w-full relative z-10">
             <div className="flex flex-col justify-between min-h-[400px]">
-                <div>
-                    <h2 className="text-[10vw] md:text-[8rem] font-black leading-none mb-12 tracking-tighter">
-                        LET'S<br /><span className="text-stroke text-transparent hover:text-dark transition-colors duration-500">CONNECT.</span>
-                    </h2>
-                    <div className="border-l-4 border-accent pl-8 max-w-xl">
-                        <p className="text-2xl font-bold mb-6">感谢您花时间阅读我的作品集。</p>
-                        <p className="text-gray-600 text-lg leading-relaxed mb-6">
-                            我相信新兴技术的无限潜力，也相信创造力没有界限。期待用我的经验能为贵团队带来帮助。
-                        </p>
-                    </div>
-                </div>
+                <h2 className="text-[clamp(4rem,10vw,12rem)] font-black leading-none tracking-tighter italic uppercase drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">LET'S<br /><span className="text-stroke-white text-transparent hover:text-white transition-all duration-700 shadow-[0_0_15px_rgba(255,255,255,0.3)]">CONNECT.</span></h2>
                 <div className="mt-16 space-y-4">
-                    <a href="mailto:408179683@qq.com" className="text-3xl md:text-4xl font-black block hover:text-accent transition-colors cursor-hover tracking-tight" data-cursor="link">408179683@qq.com</a>
-                    <div className="flex items-center gap-3 text-xl font-mono font-bold text-gray-500">
-                        <Phone size={20} className="text-accent"/> 183-9081-0208
+                    <a href="mailto:408179683@qq.com" className="text-[clamp(1.5rem,3vw,3rem)] font-black block hover:text-white transition-all tracking-tight text-white/90 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]">408179683@qq.com</a>
+                    <div className="flex items-center gap-3 text-xl font-mono font-bold text-white/40 hover:text-white transition-all duration-300">
+                        <span className="w-10 h-[1px] bg-white/20"></span> 183-9081-0208
                     </div>
                 </div>
             </div>
-
-            {/* Interactive Footer Box */}
-            <div className="relative w-full h-full min-h-[400px] border border-gray-200 bg-gray-50 flex flex-col justify-between">
-                <div className="p-6 border-b border-gray-200 flex justify-between items-start">
-                    <div className="text-xs font-mono uppercase tracking-widest text-gray-400">Interactive</div>
-                    <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+            <div className="relative w-full h-full min-h-[400px] border border-white/10 bg-white/[0.02] flex flex-col justify-between rounded-sm overflow-hidden group backdrop-blur-sm">
+                <div className="p-6 border-b border-white/5 flex justify-between items-start">
+                    <div className="text-[9px] font-mono uppercase tracking-[4px] text-white/30 italic">Reactive Geometry Fragment</div>
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_10px_rgba(255,255,255,1)]"></div>
                 </div>
-                
-                <div className="absolute inset-0 z-0 cursor-hover" data-cursor="model">
-                    <Canvas>
-                        <FooterSmiley />
-                    </Canvas>
+                <div className="absolute inset-0 z-0 flex items-center justify-center">
+                    <div className="w-full h-full">
+                        <Canvas camera={{ position: [0, 0, 4.5], fov: 45 }} gl={{ alpha: true }}>
+                            <Suspense fallback={null}>
+                                <HeroModel />
+                            </Suspense>
+                        </Canvas>
+                    </div>
                 </div>
-
-                <div className="relative z-10 p-6 flex justify-between items-end pointer-events-none">
-                    <p className="text-xs text-gray-400">Designed & Built by GYF</p>
+                <div className="relative z-10 p-6 flex justify-between items-end">
+                    <p className="text-[10px] text-white/30 font-mono tracking-widest uppercase">© 2025 ARCHIVE / GYF</p>
                     <div className="text-right">
-                        <p className="font-black uppercase text-2xl tracking-tighter">Guo Yifeng</p>
-                        <p className="text-xs text-gray-500 font-mono mt-1">© 2025 PORTFOLIO</p>
+                        <p className="font-black uppercase text-2xl tracking-tighter italic text-white/90 drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">Guo Yifeng</p>
                     </div>
                 </div>
             </div>
         </div>
+        <div className="absolute -bottom-64 -right-64 w-[600px] h-[600px] bg-white/5 rounded-full blur-[150px] pointer-events-none"></div>
       </footer>
 
-      <Modal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
-        data={activeProject} 
-      />
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} data={activeProject} />
     </div>
   );
 };

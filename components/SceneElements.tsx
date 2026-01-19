@@ -1,3 +1,4 @@
+
 import React, { useRef, Suspense, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Float, Environment, MeshTransmissionMaterial, useGLTF } from '@react-three/drei';
@@ -70,15 +71,16 @@ export const ParticleBackground: React.FC = () => {
       canvas.width = width;
       canvas.height = height;
       particles = [];
-      const count = Math.floor((width * height) / 15000); 
+      // Increased count for starry effect, smaller size
+      const count = Math.floor((width * height) / 8000); 
       for (let i = 0; i < count; i++) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-          size: Math.random() * 2,
-          alpha: Math.random() * 0.5 + 0.1,
+          vx: (Math.random() - 0.5) * 0.2, // Slower movement
+          vy: (Math.random() - 0.5) * 0.2,
+          size: Math.random() * 1.5, // Smaller stars
+          alpha: Math.random() * 0.6 + 0.1,
         });
       }
     };
@@ -98,10 +100,11 @@ export const ParticleBackground: React.FC = () => {
         if (p.y < 0) p.y = height;
         if (p.y > height) p.y = 0;
 
-        // Subtle mouse influence
-        const dx = (pMouse.x - width / 2) * 0.02 * p.size;
-        const dy = (pMouse.y - height / 2) * 0.02 * p.size;
+        // Subtle mouse influence (Parallax)
+        const dx = (pMouse.x - width / 2) * 0.01 * p.size;
+        const dy = (pMouse.y - height / 2) * 0.01 * p.size;
 
+        // Draw star
         ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
         ctx.beginPath();
         ctx.arc(p.x + dx, p.y + dy, p.size, 0, Math.PI * 2);
@@ -126,13 +129,14 @@ export const ParticleBackground: React.FC = () => {
   return (
     <canvas 
       ref={canvasRef} 
-      className="fixed top-0 left-0 w-full h-full pointer-events-none z-[1] opacity-60"
+      className="fixed top-0 left-0 w-full h-full pointer-events-none z-[1] opacity-50"
     />
   );
 };
 
 // --- Hero Scene (Fallback 3D) ---
-export const HeroScene: React.FC = () => {
+// Fix: Renamed HeroScene to HeroModel to align with imports in Sections.tsx and App.tsx
+export const HeroModel: React.FC = () => {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -157,7 +161,7 @@ export const HeroScene: React.FC = () => {
         <spotLight position={[-5, 5, 0]} intensity={10} color="#ff3333" angle={0.5} penumbra={1} />
         
         {/* HDRI */}
-        <Environment preset="city" />
+        <Environment files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/potsdamer_platz_1k.hdr" />
 
         <mesh ref={meshRef} scale={[0.4, 0.4, 0.4]}>
             <torusKnotGeometry args={[1.2, 0.4, 150, 20]} />
@@ -344,7 +348,7 @@ export const MagnetScene: React.FC = () => {
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 10, 7]} intensity={0.8} />
       <pointLight position={[-10, -5, 5]} intensity={0.5} color="#ffffff" />
-      <Environment preset="studio" />
+      <Environment files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr" />
 
       <group ref={group}>
         {data.baseTargets.map((_, i) => {

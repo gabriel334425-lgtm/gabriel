@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="scroll-smooth bg-[#050505]">
+<html lang="zh-CN" class="bg-[#020204]">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,8 +15,8 @@
             colors: {
               accent: '#FF3333',
               brandOrange: '#FF4400', 
-              dark: '#050505',
-              darklighter: '#111111'
+              dark: '#020204', // Deep Starry Black
+              darklighter: '#0A0A10' // Slightly lighter, cool-toned black
             },
             fontFamily: {
               sans: ['Inter', 'Noto Sans SC', 'sans-serif'],
@@ -38,6 +38,11 @@
       }
     </script>
     <style>
+      @font-face {
+        font-family: 'Sudo';
+        src: url('https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/66670969d30648d8e967997c_Sudo.ttf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vNjY2NzA5NjlkMzA2NDhkOGU5Njc5OTdjX1N1ZG8udHRmIiwiaWF0IjoxNzY4ODEzODAxLCJleHAiOjE4MDAzNDk4MDF9.PijtCC_WFtprXXLQdzWSjF0bxIu_VzmMKv3DgIbAztU') format('truetype');
+      }
+
       /* Hide scrollbar for Chrome, Safari and Opera */
       .no-scrollbar::-webkit-scrollbar {
           display: none;
@@ -49,10 +54,10 @@
       }
       body {
         cursor: default;
+        background-color: #020204;
+        color: #ffffff;
       }
-      html {
-        scroll-padding-top: 100px; /* Ensures navigation jumps don't hide content behind fixed header */
-      }
+      
       .text-stroke {
         -webkit-text-stroke: 1px #000;
       }
@@ -60,10 +65,55 @@
         -webkit-text-stroke: 1px rgba(255,255,255,0.3);
       }
       
-      /* Texture Overlay */
+      /* Texture Overlay with Animation */
+      @keyframes noise {
+        0% { transform: translate(0,0) }
+        10% { transform: translate(-5%,-5%) }
+        20% { transform: translate(-10%,5%) }
+        30% { transform: translate(5%,-10%) }
+        40% { transform: translate(-5%,15%) }
+        50% { transform: translate(-10%,5%) }
+        60% { transform: translate(15%,0) }
+        70% { transform: translate(0,10%) }
+        80% { transform: translate(-15%,0) }
+        90% { transform: translate(10%,5%) }
+        100% { transform: translate(5%,0) }
+      }
+
       .noise-overlay {
-          position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; opacity: 0.04;
+          position: fixed; top: -50%; left: -50%; width: 200%; height: 200%; pointer-events: none; z-index: 9999; opacity: 0.05;
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+          mix-blend-mode: overlay;
+          animation: noise 0.2s steps(2) infinite;
+      }
+
+      /* 沉浸式星空背景 */
+      .cosmos-bg {
+        background-color: #000;
+        background-image:
+          radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+          radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+          radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 20px);
+        background-size: 550px 550px, 350px 350px, 250px 250px;
+        background-position: 0 0, 40px 60px, 130px 270px;
+        box-shadow: inset 0 0 200px rgba(0,0,0,0.8);
+      }
+      
+      /* Lenis Recommended CSS */
+      html.lenis, html.lenis body {
+        height: auto;
+      }
+      .lenis.lenis-smooth {
+        scroll-behavior: auto !important;
+      }
+      .lenis.lenis-smooth [data-lenis-prevent] {
+        overscroll-behavior: contain;
+      }
+      .lenis.lenis-stopped {
+        overflow: hidden;
+      }
+      .lenis.lenis-scrolling iframe {
+        pointer-events: none;
       }
     </style>
   <script type="importmap">
@@ -73,15 +123,32 @@
     "react": "https://aistudiocdn.com/react@^19.2.1",
     "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
     "@react-three/fiber": "https://aistudiocdn.com/@react-three/fiber@^9.4.2",
-    "three": "https://aistudiocdn.com/three@^0.181.2",
+    "three": "https://esm.sh/three@0.181.2",
+    "three/": "https://esm.sh/three@0.181.2/",
+    "three/examples/jsm/loaders/GLTFLoader": "https://esm.sh/three@0.181.2/examples/jsm/loaders/GLTFLoader?external=three",
+    "three/examples/jsm/loaders/RGBELoader": "https://esm.sh/three@0.181.2/examples/jsm/loaders/RGBELoader?external=three",
+    "three/examples/jsm/loaders/FontLoader": "https://esm.sh/three@0.181.2/examples/jsm/loaders/FontLoader?external=three",
+    "three/examples/jsm/geometries/TextGeometry": "https://esm.sh/three@0.181.2/examples/jsm/geometries/TextGeometry?external=three",
+    "three/examples/jsm/controls/OrbitControls": "https://esm.sh/three@0.181.2/examples/jsm/controls/OrbitControls?external=three",
+    "three/examples/jsm/postprocessing/EffectComposer": "https://esm.sh/three@0.181.2/examples/jsm/postprocessing/EffectComposer?external=three",
+    "three/examples/jsm/postprocessing/RenderPass": "https://esm.sh/three@0.181.2/examples/jsm/postprocessing/RenderPass?external=three",
+    "three/examples/jsm/postprocessing/UnrealBloomPass": "https://esm.sh/three@0.181.2/examples/jsm/postprocessing/UnrealBloomPass?external=three",
+    "three/examples/jsm/postprocessing/OutputPass": "https://esm.sh/three@0.181.2/examples/jsm/postprocessing/OutputPass?external=three",
+    "three/examples/jsm/postprocessing/ShaderPass": "https://esm.sh/three@0.181.2/examples/jsm/postprocessing/ShaderPass?external=three",
+    "three/examples/jsm/shaders/GammaCorrectionShader": "https://esm.sh/three@0.181.2/examples/jsm/shaders/GammaCorrectionShader?external=three",
     "@react-three/drei": "https://aistudiocdn.com/@react-three/drei@^10.7.7",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.25"
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.25",
+    "troika-three-text": "https://esm.sh/troika-three-text@^0.52.4",
+    "gsap": "https://esm.sh/gsap@3.12.5",
+    "postprocessing": "https://esm.sh/postprocessing@6.36.0",
+    "@react-three/postprocessing": "https://esm.sh/@react-three/postprocessing@2.16.2?external=react,react-dom,three,postprocessing",
+    "lenis": "https://unpkg.com/lenis@1.1.20/dist/lenis.mjs"
   }
 }
 </script>
 </head>
-  <body>
+  <body class="cosmos-bg">
     <div class="noise-overlay"></div>
     <div id="root"></div>
   </body>
