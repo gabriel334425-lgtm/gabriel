@@ -1,5 +1,6 @@
+
 import React, { useEffect, useRef, useLayoutEffect } from 'react';
-import { Canvas, useFrame, useThree, extend, Object3DNode } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, extend, ThreeElement } from '@react-three/fiber';
 import { Environment, Text, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
@@ -10,12 +11,15 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass';
 
 extend({ EffectComposer, RenderPass, UnrealBloomPass, OutputPass });
 
+// Fix for JSX intrinsic elements by augmenting the ThreeElements interface from @react-three/fiber
+// Using 'any' for these properties to resolve "Subsequent property declarations" errors 
+// caused by type mismatches between imported classes and existing library definitions.
 declare module '@react-three/fiber' {
   interface ThreeElements {
-    effectComposer: Object3DNode<EffectComposer, typeof EffectComposer>;
-    renderPass: Object3DNode<RenderPass, typeof RenderPass>;
-    unrealBloomPass: Object3DNode<UnrealBloomPass, typeof UnrealBloomPass>;
-    outputPass: Object3DNode<OutputPass, typeof OutputPass>;
+    effectComposer: any;
+    renderPass: any;
+    unrealBloomPass: any;
+    outputPass: any;
   }
 }
 
@@ -35,37 +39,45 @@ const PostProcessing = () => {
   );
 };
 
-const SceneContent = ({ playIntro, onAnimComplete }: { playIntro: boolean; onAnimComplete: () => void }) => {
+const SceneContent = ({ playIntro, onIntroComplete }: { playIntro: boolean; onIntroComplete: () => void }) => {
   const modelWrapper = useRef<THREE.Group>(null);
   const titleGroup = useRef<THREE.Group>(null);
   const modelGroup = useRef<THREE.Group>(null);
   
   const { viewport } = useThree();
-
-  // --- 核心适配算法 V2 (Visual Alignment Fix) ---
   
-  // 1. 目标宽度：UI padding 为 4vw，内容区占 92%。
-  // 但考虑到透视关系(FOV 35)，边缘可能会有视差，我们稍微设大一点点目标让它视觉上"顶"到边
-  const targetContentWidth = viewport.width * 0.94; 
+  const isMobile = viewport.width < 5.5;
 
-  // 2. 字宽系数 (Char Factor)
-  // 之前是 7.2 (太小)，现在调整为 6.4
-  // 系数越小 -> 单个字越大 -> 总宽度越宽 -> 撑满屏幕
-  const charFactor = 6.4; 
+  // --- 1. 动态字号算法 ---
+  // 目标宽度：视口的 92%
+  const targetWidth = viewport.width * 0.92;
+  const charFactor = 6.1; 
+  const fontSize = targetWidth / charFactor; 
+
+  // --- 2. 布局微调 ---
+  const gap = fontSize * 0.45;
   
-  let fontSize = targetContentWidth / charFactor;
+  // 核心微调：手机端标题整体下移 -0.75 让视觉重心更稳
+  // 桌面端保持居中 (0)
+  const titleBaseY = isMobile ? -0.75 : 0;
 
-  // 3. 最大字号限制
-  // 稍微放开限制，让大屏下更有冲击力
-  fontSize = Math.min(fontSize, 3.0); 
+  const layout = {
+    // 模型位置：手机端下移到 0.3，桌面端居中
+    modelPos: isMobile 
+        ? [0, 0.3, 0] as [number, number, number]  
+        : [0, 0, 0] as [number, number, number],
 
-  // 4. 动态行间距 & 模型大小
-  // 保持比例：行间距为字号的 0.42 倍
-  const gap = fontSize * 0.42;
-  // 模型大小：保持为字号的 2.2 倍，确保填满中间空隙
-  const modelScale = fontSize * 2.2; 
+    // 文字内部相对位置 (Gap)
+    text1Pos: [0, gap, 0] as [number, number, number],
+    text2Pos: [0, -gap, 0] as [number, number, number]
+  };
 
-  const gltf = useGLTF('https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/untitled.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vdW50aXRsZWQuZ2xiIiwiaWF0IjoxNzY4ODM0MzQ5LCJleHAiOjE4MDAzNzAzNDl9.hjXXSXbsC2LImfa9gfahkP8-kPN_-e5KDYb2rxGQXo8');
+  // 模型大小：手机端放大，比例设为 0.8 宽度占比
+  const modelScale = isMobile 
+    ? Math.min(3.5, viewport.width * 0.8) 
+    : fontSize * 2.3;
+
+  const gltf = useGLTF('https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/untitled.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vdW50aXRsZWQuZ2xiIiwiaWF0IjoxNzY4ODMyNjYxLCJleHAiOjE4MDAzNjg2NjF9.gjbvDyyHwynXf0kHiuu4yZorozpN429-bx-nulvx39M');
 
   useLayoutEffect(() => {
     const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -86,6 +98,8 @@ const SceneContent = ({ playIntro, onAnimComplete }: { playIntro: boolean; onAni
            material.onBeforeCompile = (shader) => {
              shader.uniforms.uRes = { value: 80.0 }; 
              m.userData.shader = shader;
+             
+             // CRITICAL FIX: Add a newline \n after uniform declaration to avoid breaking shader preprocessor directives
              shader.vertexShader = `uniform float uRes;\n${shader.vertexShader}`.replace(
                '#include <project_vertex>',
                `vec4 mvPosition = vec4( transformed, 1.0 );
@@ -125,11 +139,11 @@ const SceneContent = ({ playIntro, onAnimComplete }: { playIntro: boolean; onAni
                 }
             });
         }
-        onAnimComplete();
+        onIntroComplete();
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [playIntro, onAnimComplete]);
+  }, [playIntro, onIntroComplete]);
 
   useFrame((state) => {
     if (playIntro && modelWrapper.current) {
@@ -142,13 +156,15 @@ const SceneContent = ({ playIntro, onAnimComplete }: { playIntro: boolean; onAni
 
   return (
     <>
-        <group ref={titleGroup} visible={false}>
-             <Text font={FONT_URL} position={[0, gap, 0]} fontSize={fontSize} letterSpacing={0.05} material-toneMapped={false}>GUOYIFENG</Text>
-             <Text font={FONT_URL} position={[0, -gap, 0]} fontSize={fontSize} letterSpacing={0.05} material-toneMapped={false}>PORTFOLIO</Text>
+        {/* Title Group - 应用 titleBaseY 实现微调下移 */}
+        <group ref={titleGroup} visible={false} position={[0, titleBaseY, 0]}>
+             <Text font={FONT_URL} position={layout.text1Pos} fontSize={fontSize} letterSpacing={0.05} material-toneMapped={false}>GUOYIFENG</Text>
+             <Text font={FONT_URL} position={layout.text2Pos} fontSize={fontSize} letterSpacing={0.05} material-toneMapped={false}>PORTFOLIO</Text>
         </group>
 
+        {/* Model Wrapper */}
         <group ref={modelWrapper}>
-             <group ref={modelGroup} visible={false} scale={[modelScale, modelScale, modelScale]}>
+             <group ref={modelGroup} visible={false} position={layout.modelPos} scale={[modelScale, modelScale, modelScale]}>
                 <primitive object={gltf.scene} />
              </group>
         </group>
@@ -170,7 +186,7 @@ const Hero3DBase: React.FC<Hero3DBaseProps> = ({ playIntro, onIntroComplete }) =
         dpr={[1, 2]}
       >
         <Environment preset="city" />
-        <SceneContent playIntro={playIntro} onAnimComplete={onIntroComplete} />
+        <SceneContent playIntro={playIntro} onIntroComplete={onIntroComplete} />
         <PostProcessing />
       </Canvas>
     </div>
