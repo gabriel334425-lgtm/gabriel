@@ -13,20 +13,17 @@ const Hero: React.FC<HeroProps> = ({ onLoadingComplete }) => {
 
   useEffect(() => {
     if (heroReady && onLoadingComplete) {
-      // 3D 动画一结束，立即通知 App 显示顶部 Header
       onLoadingComplete();
     }
   }, [heroReady, onLoadingComplete]);
 
-  // --- UI 弹性动效 ---
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
       transition: {
-        // 让底部内容稍微晚一点点点出现，给 Header 一个“先发”的机会，或者几乎同时
-        delayChildren: 0.1, 
-        staggerChildren: 0.1
+        staggerChildren: 0.1,
+        delayChildren: 0.1
       }
     }
   };
@@ -63,9 +60,9 @@ const Hero: React.FC<HeroProps> = ({ onLoadingComplete }) => {
         />
       </div>
 
-      {/* 底部 UI */}
+      {/* 核心修改：增加 max-w-3840px 和绝对居中，确保大屏下与 Header/Grid 对齐 */}
       <motion.div 
-        className="absolute inset-0 z-20 pointer-events-none px-[4vw] py-[4vh] flex flex-col justify-between"
+        className="absolute z-20 pointer-events-none px-[4vw] py-[4vh] flex flex-col justify-between w-full h-full max-w-[3840px] left-1/2 -translate-x-1/2"
         variants={containerVariants}
         initial="hidden"
         animate={heroReady ? "show" : "hidden"}
@@ -73,13 +70,19 @@ const Hero: React.FC<HeroProps> = ({ onLoadingComplete }) => {
         <div /> 
 
         <div className="flex justify-between items-end">
-          <motion.div variants={itemVariants} className="max-w-md pointer-events-auto mb-10">
-            <p className="text-white/70 text-sm font-light leading-relaxed pl-4 border-l-2 border-red-600">
-              10年广告与游戏行业创意设计师。<br />
-              核心聚焦：把控S级项目的视觉品质（定标准）与利用AI工具提升团队产出效率（建流程）。
-            </p>
+          {/* 左下角 */}
+          <motion.div variants={itemVariants} className="max-w-lg pointer-events-auto mb-10">
+            <div className="pl-4 border-l-2 border-red-600 space-y-2">
+                <h3 className="text-white text-base font-bold">10年广告与游戏行业创意设计师。</h3>
+                <p className="text-white/70 text-xs font-light leading-relaxed text-justify">
+                  核心聚焦两大维度：把控S级项目的视觉质量（定标准）和利用AI工具提高团队产出效率（建流程）。
+                  <br className="hidden md:block"/>
+                  擅长通过梳理视觉规范及搭建AIGC工作流，将个人经验沉淀为可复用的团队资产，有效解决多方协作中的风格统一难题与产能瓶颈。
+                </p>
+            </div>
           </motion.div>
 
+          {/* 右下角 */}
           <motion.div variants={itemVariants} className="text-white/50 font-mono text-xs tracking-widest uppercase flex flex-col items-center gap-2 mb-10">
             <div className="animate-bounce flex flex-col items-center">
               Scroll for more 

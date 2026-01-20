@@ -5,6 +5,7 @@ export interface ExperienceItem {
   company: string;
   role: string;
   description: string;
+  logo?: string;
 }
 
 export interface ProjectItem {

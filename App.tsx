@@ -10,30 +10,31 @@ import { HeroModel, ParticleBackground } from './components/SceneElements';
 import { LayoutGrid, CustomCursor } from './components/UI';
 import { ExperienceItem, ProjectItem, FlagshipDetails } from './types';
 
+// --- 职业旅程文案 ---
 const experienceData: ExperienceItem[] = [
   {
     period: "2020 - 2025",
     company: "网易游戏 (NetEase Games)",
     role: "高级创意设计师",
-    description: "负责网易多款游戏的营销创意及设计工作，主要服务：《阴阳师》《萤火突击》《率土之滨》等数十款产品。具备从0-1的S级项目发行及运营的全流程经验，主导关键营销战役的视觉落地与策略执行。"
+    description: "从创意执行到体系搭建的关键跃迁。深度参与《阴阳师》、《率土之滨》、《萤火突击》等十余款S级项目。具备从SLG、FPS、RPG等多品类驾驭能力，覆盖从0-1新品上市到长线LTV运营的全生命周期视觉管理。"
   },
   {
     period: "2017 - 2020",
-    company: "广东省广告集团 (GDAD)",
+    company: "广东省广告集团 (GIMC)",
     role: "美术指导",
-    description: "第十事业部，主要负责Social创意及设计。服务中国移动、咪咕等头部客户，具备独立驻点服务能力。案例曾获长城铜奖及其他入围奖。"
+    description: "扎实的整合营销实战。核心服务中国移动、咪咕等巨头客户。主导的多个互动H5及视频项目获[长城奖]等多个奖项的认可，磨练了解决复杂商业诉求的策略能力。"
   },
   {
     period: "2016 - 2017",
     company: "卡姿兰 (Carslan)",
-    role: "设计校招生",
-    description: "主要负责电商板块的内容，积累了丰富的电商、直播、广告图的制作经验。"
+    role: "设计管培生",
+    description: "商业美术的启蒙。于一线市场部与电商部轮岗，建立“创意驱动设计””数据驱动创意“的底层逻辑，确立投身广告创意的职业初心。"
   },
   {
     period: "2012 - 2016",
     company: "长沙理工大学 (CSUST)",
-    role: "艺术设计专业",
-    description: "从事装饰艺术方面的学习，扩宽了美学思维和实践能力，铸造了坚实的美术基础。"
+    role: "装饰艺术专业",
+    description: "美学根基。系统的艺术理论学习，构建了坚实的审美体系。"
   }
 ];
 
@@ -42,6 +43,13 @@ const worksData: ProjectItem[] = [
   { id: 'racing', title: '巅峰极速', subtitle: 'AI应用 · 降本增效', tags: ['AI Workflow', 'Visuals'], imageUrl: 'https://picsum.photos/800/450?random=2' },
   { id: 'knives', title: '荒野行动', subtitle: '电竞赛事视觉重构', tags: ['Esports', 'Branding'], imageUrl: 'https://picsum.photos/800/450?random=3' },
   { id: 'lostlight', title: '萤火突击', subtitle: 'S级项目全案发行', tags: ['Full Case', 'Launch'], imageUrl: 'https://picsum.photos/800/450?random=4' },
+];
+
+const ipData = [
+  "大话西游", "梦幻西游", 
+  "荒野行动", "暗黑破坏神：不朽", "哈利波特：魔法觉醒", 
+  "率土之滨", "阴阳师IP", "萤火突击", 
+  "巅峰极速", "命运：群星", "燕云十六声", "漫威争锋"
 ];
 
 const App: React.FC = () => {
@@ -60,17 +68,25 @@ const App: React.FC = () => {
         gestureOrientation: 'vertical',
         smoothWheel: true,
     });
+
+    if (loading) {
+        lenis.stop();
+        window.scrollTo(0, 0);
+    } else {
+        lenis.start();
+    }
+    
     function raf(time: number) {
         lenis.raf(time);
         requestAnimationFrame(raf);
     }
     requestAnimationFrame(raf);
     return () => lenis.destroy();
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || loading) return;
       const x = (e.clientX / window.innerWidth - 0.5) * 2;
       const y = (e.clientY / window.innerHeight - 0.5) * 2;
       const move1 = { x: x * -25, y: y * -25 };
@@ -84,7 +100,7 @@ const App: React.FC = () => {
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [loading]);
 
   const toggleAudio = () => {
     if (audioRef.current) {
@@ -104,7 +120,27 @@ const App: React.FC = () => {
         id: project.id,
         title: project.title,
         role: "Lead Designer / Art Direction",
-        content: <div className="py-20 text-center text-white/40 font-mono text-sm tracking-widest uppercase">Project details loading...</div>
+        content: (
+          <div className="space-y-12">
+            <div className="aspect-video bg-white/5 rounded-sm overflow-hidden relative group">
+              <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover opacity-80" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 space-y-6">
+                <h3 className="text-3xl font-black italic uppercase italic">Project Overview</h3>
+                <p className="text-white/60 leading-relaxed font-light">
+                  This project involved creating a comprehensive visual identity and marketing strategy for {project.title}.
+                </p>
+              </div>
+              <div className="space-y-6">
+                <h4 className="text-sm font-mono uppercase tracking-widest text-accent">Deliverables</h4>
+                <ul className="space-y-2 text-sm text-white/40">
+                  {project.tags.map(tag => <li key={tag}>— {tag}</li>)}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )
     });
     setModalOpen(true);
   };
@@ -112,7 +148,8 @@ const App: React.FC = () => {
   return (
     <div 
       ref={containerRef}
-      className="min-h-screen selection:bg-white selection:text-black w-full overflow-hidden text-white font-sans relative"
+      className={`selection:bg-white selection:text-black w-full text-white font-sans relative
+        ${loading ? 'h-screen overflow-hidden fixed inset-0' : 'min-h-screen'}`}
       style={{
         backgroundColor: '#000',
         backgroundImage: `
@@ -132,17 +169,11 @@ const App: React.FC = () => {
       
       <audio ref={audioRef} loop src="https://assets.mixkit.co/music/preview/mixkit-sci-fi-drone-ambience-2708.mp3" />
 
-      {/* Modified: Header uses Framer Motion spring entry */}
       <motion.div
         className="fixed top-0 left-0 w-full z-50 pointer-events-none"
         initial={{ opacity: 0, y: -20 }}
         animate={!loading ? { opacity: 1, y: 0 } : {}}
-        transition={{ 
-            type: "spring", 
-            stiffness: 80, 
-            damping: 15, 
-            delay: 0.05 // Slight delay to sync with bottom UI but appear Top-Down
-        }}
+        transition={{ type: "spring", stiffness: 80, damping: 15, delay: 0.05 }}
       >
          <div className="pointer-events-auto">
             <Header isMuted={isMuted} onToggleAudio={toggleAudio} />
@@ -152,13 +183,24 @@ const App: React.FC = () => {
       <main className="relative z-10 w-full text-start flex flex-col items-start">
         <Hero onLoadingComplete={() => setLoading(false)} />
         
-        <Experience items={experienceData} />
-        <Marquee />
+        <section id="experience" className="w-full relative z-20">
+            <Experience items={experienceData} />
+        </section>
+
+        <div className="w-full bg-black/0">
+            <Marquee items={ipData} />
+        </div>
+
         <Values />
         
+        {/* 旗舰案例 - 封面图已替换 */}
         <section id="flagship" className="relative w-full h-[80vh] overflow-hidden group border-y border-white/5" data-cursor="video">
              <div className="absolute inset-0 w-full h-full cursor-pointer" onClick={() => handleOpenProject('lostlight')}>
-                 <img src="https://picsum.photos/1920/1080?random=5" className="absolute inset-0 w-full h-full object-cover opacity-40 transition-transform duration-1000 group-hover:scale-105" alt="Flagship" />
+                 <img 
+                    src="https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/H75-1.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vSDc1LTEuanBnIiwiaWF0IjoxNzY4ODk5NzM2LCJleHAiOjIwODQyNTk3MzZ9.RoEErK2ORTUb0oR6gGo06_ag62wFQNBstCC_-SZsloU" 
+                    className="absolute inset-0 w-full h-full object-cover opacity-40 transition-transform duration-1000 group-hover:scale-105" 
+                    alt="Flagship" 
+                 />
                  <div className="absolute inset-0 bg-gradient-to-t from-[#020204] via-transparent to-[#020204]/40"></div>
                  <div className="absolute top-0 left-0 w-full h-full px-[4vw] flex flex-col justify-center pt-32 items-start z-10">
                     <span className="text-white/40 text-[10px] font-mono uppercase tracking-[6px] mb-4">S-TIER FLAGSHIP CASE</span>
@@ -175,8 +217,7 @@ const App: React.FC = () => {
         <Showreel />
       </main>
 
-      <footer id="contact" className="bg-[#020204]/50 backdrop-blur-sm text-white py-32 px-[4vw] relative overflow-hidden border-t border-white/10 w-full">
-        {/* Footer content */}
+      <footer id="contact" className="bg-[#020204]/50 backdrop-blur-sm text-white py-48 px-[4vw] relative overflow-hidden border-t border-white/10 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 w-full relative z-10">
             <div className="flex flex-col justify-between min-h-[400px]">
                 <h2 className="text-[clamp(4rem,10vw,12rem)] font-black leading-none tracking-tighter italic uppercase drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">LET'S<br /><span className="text-stroke-white text-transparent hover:text-white transition-all duration-700 shadow-[0_0_15px_rgba(255,255,255,0.3)]">CONNECT.</span></h2>
@@ -192,7 +233,7 @@ const App: React.FC = () => {
                     <div className="text-[9px] font-mono uppercase tracking-[4px] text-white/30 italic">Reactive Geometry Fragment</div>
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_10px_rgba(255,255,255,1)]"></div>
                 </div>
-                <div className="absolute inset-0 z-0 flex items-center justify-center">
+                <div className="absolute inset-0 z-0 flex items-center justify-center opacity-40 group-hover:opacity-100 transition-opacity duration-1000">
                     <div className="w-full h-full">
                         <Canvas camera={{ position: [0, 0, 4.5], fov: 45 }} gl={{ alpha: true }}>
                             <Suspense fallback={null}>

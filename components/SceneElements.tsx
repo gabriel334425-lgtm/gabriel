@@ -1,64 +1,97 @@
-
-import React, { useRef, Suspense, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Float, Environment, MeshTransmissionMaterial, useGLTF } from '@react-three/drei';
+import { Float, Environment, useGLTF, PresentationControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 // --- Assets ---
 const ICON_URLS = [
-  "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/ae.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vYWUuZ2xiIiwiaWF0IjoxNzY1Mzg0MjkxLCJleHAiOjE3OTY5MjAyOTF9.nacV0T-ezx0c52xD7VR5i34n8sUs9BnRvHaWNQdlRog",
-  "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/ai.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vYWkuZ2xiIiwiaWF0IjoxNzY1Mzg0MzMwLCJleHAiOjE3OTY5MjAzMzB9.CRxXVVVB2IJv0DWVlqzo9VNjhBXufDgdlO8OkS_lhRg",
-  "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/pr.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vcHIuZ2xiIiwiaWF0IjoxNzY1Mzg0MzQyLCJleHAiOjE3OTY5MjAzNDJ9.RNshtiF_phSL2KdjTSCE6MBEJ0rVBI3oqSesPWvXg0E",
-  "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/ps.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vcHMuZ2xiIiwiaWF0IjoxNzY1Mzg0MzUwLCJleHAiOjE3OTY5MjAzNTB9.lI-S6iS-iS0jEg0ME0WCOXhUkh1Mc1XTUG1olaHnIzo"
+  "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/pr.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vcHIuZ2xiIiwiaWF0IjoxNzY4ODk1NzQxLCJleHAiOjIwODQyNTU3NDF9._bWkS7q1GkBuLhNggTtdn2_yOmSOOeioB8958QYprGc",
+  "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/ai.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vYWkuZ2xiIiwiaWF0IjoxNzY4ODk1Nzk1LCJleHAiOjIwODQyNTU3OTV9.uTHa0Pfo5faQplcfbmP4976isIPpPHSZyIIDEK8uznI",
+  "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/ae.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vYWUuZ2xiIiwiaWF0IjoxNzY4ODk1ODE2LCJleHAiOjIwODQyNTU4MTZ9.IpbWee0NRks10fdVf9w3ElHK1xrF7d6GgapLyZvbPd8",
+  "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/ps.glb?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vcHMuZ2xiIiwiaWF0IjoxNzY4ODk1ODM5LCJleHAiOjIwODQyNTU4Mzl9.D4Zk2YjFDJpAtJ7cDp5ii_ROzMyju2HPdPk9RYLWW-A"
 ];
 
-// Preload icons
+// 原子轨道配置
+const ORBIT_DATA = [
+    { label: 'PR', tiltX: 45,  tiltZ: 20,  speed: 1.1, radius: 2.5, phase: 0 },
+    { label: 'AI', tiltX: -45, tiltZ: -20, speed: 1.0, radius: 2.6, phase: Math.PI * 0.7 },
+    { label: 'AE', tiltX: 20,  tiltZ: -60, speed: 1.2, radius: 2.4, phase: Math.PI * 1.4 },
+    { label: 'PS', tiltX: -20, tiltZ: 60,  speed: 0.9, radius: 2.7, phase: Math.PI * 0.3 } 
+];
+
 ICON_URLS.forEach(url => useGLTF.preload(url));
 
-const IconMesh = ({ url, scale = 1 }: { url: string; scale?: number }) => {
+// 1. 生成平滑的山体噪波贴图
+const useNoiseTexture = () => {
+    return useMemo(() => {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.fillStyle = '#111111'; // 深色底
+            ctx.fillRect(0, 0, size, size);
+            
+            // 绘制大半径、低透明度的圆，叠加出起伏感 (Perlin-like effect)
+            for (let i = 0; i < 60; i++) { // 减少数量，增加尺寸 -> 更平缓的山体
+                const x = Math.random() * size;
+                const y = Math.random() * size;
+                const r = 80 + Math.random() * 150; // 大半径
+                const alpha = 0.1 + Math.random() * 0.2;
+                
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+    }, []);
+};
+
+const OrbitingIcon = ({ url, position, rotation, material, scale = 0.22 }: any) => {
     const { scene } = useGLTF(url);
     const clone = useMemo(() => {
         const c = scene.clone();
-        
         const toRemove: THREE.Object3D[] = [];
-
         c.traverse((child) => {
              if ((child as THREE.Mesh).isMesh) {
                  const m = child as THREE.Mesh;
-                 
-                 // Remove "plane" (backgrounds)
-                 if (m.name.toLowerCase().includes('plane')) {
+                 if (
+                    m.name.toLowerCase().includes('plane') || 
+                    m.geometry.type.includes('Plane') ||
+                    m.name.includes('立方体') 
+                 ) {
                      toRemove.push(m);
                  } else {
                      m.castShadow = true;
                      m.receiveShadow = true;
-                     // Original material restored (no override)
+                     m.material = material;
                  }
              }
         });
-
-        // Remove the detected planes
-        toRemove.forEach(child => {
-            child.parent?.remove(child);
-        });
-
+        toRemove.forEach(obj => obj.parent?.remove(obj));
         return c;
-    }, [scene]);
+    }, [scene, material]);
 
-    return <primitive object={clone} scale={scale} />;
+    return <primitive object={clone} position={position} rotation={rotation} scale={scale} />;
 };
 
-// --- Particle Background (2D Canvas) ---
 export const ParticleBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
     let width = window.innerWidth;
     let height = window.innerHeight;
     let particles: { x: number; y: number; vx: number; vy: number; size: number; alpha: number }[] = [];
@@ -71,15 +104,14 @@ export const ParticleBackground: React.FC = () => {
       canvas.width = width;
       canvas.height = height;
       particles = [];
-      // Increased count for starry effect, smaller size
       const count = Math.floor((width * height) / 8000); 
       for (let i = 0; i < count; i++) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.2, // Slower movement
+          vx: (Math.random() - 0.5) * 0.2, 
           vy: (Math.random() - 0.5) * 0.2,
-          size: Math.random() * 1.5, // Smaller stars
+          size: Math.random() * 1.5, 
           alpha: Math.random() * 0.6 + 0.1,
         });
       }
@@ -99,12 +131,8 @@ export const ParticleBackground: React.FC = () => {
         if (p.x > width) p.x = 0;
         if (p.y < 0) p.y = height;
         if (p.y > height) p.y = 0;
-
-        // Subtle mouse influence (Parallax)
         const dx = (pMouse.x - width / 2) * 0.01 * p.size;
         const dy = (pMouse.y - height / 2) * 0.01 * p.size;
-
-        // Draw star
         ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
         ctx.beginPath();
         ctx.arc(p.x + dx, p.y + dy, p.size, 0, Math.PI * 2);
@@ -115,287 +143,186 @@ export const ParticleBackground: React.FC = () => {
 
     window.addEventListener('resize', resizeParticles);
     window.addEventListener('mousemove', handleMouseMove);
-    
     resizeParticles();
     animateParticles();
-
     return () => {
       window.removeEventListener('resize', resizeParticles);
       window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
-
-  return (
-    <canvas 
-      ref={canvasRef} 
-      className="fixed top-0 left-0 w-full h-full pointer-events-none z-[1] opacity-50"
-    />
-  );
+  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full pointer-events-none z-[1] opacity-50" />;
 };
 
-// --- Hero Scene (Fallback 3D) ---
-// Fix: Renamed HeroScene to HeroModel to align with imports in Sections.tsx and App.tsx
 export const HeroModel: React.FC = () => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
-
   useFrame((state) => {
     if (meshRef.current) {
-        // Smooth rotation following mouse like the reference
-        const maxRot = THREE.MathUtils.degToRad(15);
-        const mouseX = (state.mouse.x * window.innerWidth / 2) / (window.innerWidth / 2); // state.mouse is already -1 to 1
-        const mouseY = -(state.mouse.y * window.innerHeight / 2) / (window.innerHeight / 2);
-
-        // Interpolate rotation
         meshRef.current.rotation.x += (state.mouse.y * 0.5 - meshRef.current.rotation.x) * 0.05;
         meshRef.current.rotation.y += (state.mouse.x * 0.5 - meshRef.current.rotation.y) * 0.05;
     }
   });
-
   return (
     <group>
-        {/* Lighting from reference */}
         <ambientLight intensity={0.4} color="#ffffff" />
         <directionalLight position={[5, 5, 5]} intensity={2} color="#ffffff" />
         <spotLight position={[-5, 5, 0]} intensity={10} color="#ff3333" angle={0.5} penumbra={1} />
-        
-        {/* HDRI */}
         <Environment files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/potsdamer_platz_1k.hdr" />
-
         <mesh ref={meshRef} scale={[0.4, 0.4, 0.4]}>
             <torusKnotGeometry args={[1.2, 0.4, 150, 20]} />
-            <meshStandardMaterial 
-                ref={materialRef}
-                color={0xaa0000}
-                metalness={0.9}
-                roughness={0.2}
-                side={THREE.DoubleSide}
-            />
+            <meshStandardMaterial color={0xaa0000} metalness={0.9} roughness={0.2} side={THREE.DoubleSide} />
         </mesh>
     </group>
   );
 };
 
-// --- Magnet Scene (Existing Physics - Tuned) ---
-export const MagnetScene: React.FC = () => {
-  // Use 16 items to have 4 icons repeated 4 times
-  const count = 16; 
-  const group = useRef<THREE.Group>(null);
-  const previousMouse = useRef(new THREE.Vector2(0, 0));
-  
-  // Use useMemo to maintain stable physics state
-  const data = useMemo(() => ({
-    // Linear Velocity
-    velocities: Array(count).fill(0).map(() => ({ x: 0, y: 0, z: 0 })),
-    // Angular Velocity (Spin)
-    angularVelocities: Array(count).fill(0).map(() => ({ x: 0, y: 0, z: 0 })),
-    // Target positions (form a rough cloud/cluster)
-    baseTargets: Array(count).fill(0).map(() => ({
-       x: (Math.random() - 0.5) * 1.5, // Reduced spread for tighter cluster (was 2.5)
-       y: (Math.random() - 0.5) * 1.5, // Reduced spread (was 2.5)
-       z: (Math.random() - 0.5) * 0.5  // Flatter profile
-    })),
-    // Resting Rotation (random scatter)
-    baseRotations: Array(count).fill(0).map(() => ({
-       x: (Math.random() - 0.5) * Math.PI * 0.6, // +/- random tilt
-       y: (Math.random() - 0.5) * Math.PI * 0.6,
-       z: (Math.random() - 0.5) * Math.PI * 0.2
-    })),
-    // Random offsets for sine wave bobbing
-    phases: Array(count).fill(0).map(() => Math.random() * Math.PI * 2)
-  }), []);
-
-  useFrame((state) => {
-    if (!group.current) return;
+// --- Saturn Model (原子轨道 + 模拟山体噪波 + 辉光) ---
+export const SaturnModel: React.FC = () => {
+    const groupRef = useRef<THREE.Group>(null);
+    const orbitGroupsRef = useRef<(THREE.Group | null)[]>([]);
+    const [isHovered, setIsHovered] = useState(false);
     
-    const { mouse, viewport, clock } = state;
-    const time = clock.getElapsedTime();
-    
-    // 1. Calculate Mouse Velocity (Impulse)
-    // Convert normalized mouse to world coords at approx z=0
-    const currentMouseX = (mouse.x * viewport.width) / 2;
-    const currentMouseY = (mouse.y * viewport.height) / 2;
-    
-    // Delta per frame (Velocity)
-    const mouseVelX = (currentMouseX - previousMouse.current.x);
-    const mouseVelY = (currentMouseY - previousMouse.current.y);
-    const mouseSpeed = Math.sqrt(mouseVelX * mouseVelX + mouseVelY * mouseVelY);
+    const intensityRef = useRef(0);
+    const lastScrollY = useRef(0);
 
-    previousMouse.current.set(currentMouseX, currentMouseY);
+    const displacementMap = useNoiseTexture();
 
-    const children = group.current.children;
+    // 1. 核心球体材质：带噪波，模拟山体
+    const sphereMaterial = useMemo(() => {
+        return new THREE.MeshStandardMaterial({
+            color: new THREE.Color("#aaaaaa"), // 银色
+            metalness: 1.0,        
+            roughness: 0.2,        
+            envMapIntensity: 2.5,  
+            emissive: new THREE.Color("#ffffff"), 
+            emissiveIntensity: 0.6, // 提升亮度，确保山脊高光
+            displacementMap: displacementMap, 
+            displacementScale: 0.15, // 山体隆起高度
+            toneMapped: false      
+        });
+    }, [displacementMap]);
 
-    // --- PHYSICS CONSTANTS ---
-    // Slower, tighter, more controlled
-    const SPRING_STIFFNESS = 0.05; // Position stiffness
-    const ROT_STIFFNESS = 0.03;    // Rotation stiffness (to return to base rotation)
-    const DAMPING = 0.90;          // Linear damping
-    const ROT_DAMPING = 0.92;      // Angular damping
-    const MOUSE_RADIUS = 1.5;      
-    const IMPULSE_FACTOR = 5.0;    
-    const MAX_VELOCITY = 1.0;      
+    // 2. 图标材质：光滑金属
+    const iconMaterial = useMemo(() => {
+        return new THREE.MeshPhysicalMaterial({
+            color: new THREE.Color("#cccccc"),
+            metalness: 1.0,
+            roughness: 0.1, 
+            clearcoat: 1.0,
+            envMapIntensity: 3.0,
+            emissive: new THREE.Color("#ffffff"),
+            emissiveIntensity: 0.4, 
+            toneMapped: false
+        });
+    }, []);
 
-    children.forEach((child, i) => {
-        if (i >= data.velocities.length) return;
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentY = window.scrollY;
+            const delta = Math.abs(currentY - lastScrollY.current);
+            intensityRef.current = Math.min(delta * 0.05, 4.0); 
+            lastScrollY.current = currentY;
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
-        const object = child as THREE.Object3D;
-        const v = data.velocities[i];
-        const av = data.angularVelocities[i];
-        const base = data.baseTargets[i];
-        const baseRot = data.baseRotations[i];
-        const phase = data.phases[i];
+    useFrame((state, delta) => {
+        if (!groupRef.current) return;
 
-        // --- 1. Idle Animation (Subtle) ---
-        const floatY = Math.sin(time * 1.5 + phase) * 0.05;
-        const targetX = base.x;
-        const targetY = base.y + floatY;
-        const targetZ = base.z;
+        intensityRef.current = THREE.MathUtils.lerp(intensityRef.current, 0, 0.05);
+        const hoverIntensity = isHovered ? 1.0 : 0;
+        const totalIntensity = intensityRef.current + hoverIntensity;
 
-        // --- 2. Spring Force (Return to Target Position) ---
-        const ax = (targetX - object.position.x) * SPRING_STIFFNESS;
-        const ay = (targetY - object.position.y) * SPRING_STIFFNESS;
-        const az = (targetZ - object.position.z) * SPRING_STIFFNESS;
+        const sphereSpeed = 0.1 + totalIntensity * 0.3;
+        groupRef.current.rotation.y += sphereSpeed * delta;
+        groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
 
-        // --- 3. Mouse Impulse (Localized Scattering) ---
-        const dx = object.position.x - currentMouseX;
-        const dy = object.position.y - currentMouseY;
-        const dist = Math.sqrt(dx*dx + dy*dy); 
-
-        let ix = 0, iy = 0, iz = 0;
-
-        // Only interact if mouse is moving AND close
-        if (dist < MOUSE_RADIUS && mouseSpeed > 0.01) {
-            const pushDirX = dx / dist;
-            const pushDirY = dy / dist;
-            const proximity = Math.pow(1 - dist / MOUSE_RADIUS, 2); 
-
-            // Combine movement direction (drag) with radial push (explosion)
-            const forceX = (mouseVelX * 0.6 + pushDirX * 0.4 * mouseSpeed) * IMPULSE_FACTOR * proximity;
-            const forceY = (mouseVelY * 0.6 + pushDirY * 0.4 * mouseSpeed) * IMPULSE_FACTOR * proximity;
-            
-            ix += forceX;
-            iy += forceY;
-            iz += mouseSpeed * proximity * (Math.random() - 0.5) * 2.0;
-
-            // Spin on impact
-            av.x += forceY * 0.5;
-            av.y -= forceX * 0.5;
-            av.z += (Math.random() - 0.5) * mouseSpeed;
-        }
-
-        // --- 4. Collision Avoidance ---
-        const radius = 0.5; 
-        let cx = 0, cy = 0, cz = 0;
-        
-        for (let j = 0; j < children.length; j++) {
-            if (i === j) continue;
-            const other = children[j] as THREE.Object3D;
-            const odx = object.position.x - other.position.x;
-            const ody = object.position.y - other.position.y;
-            const odz = object.position.z - other.position.z;
-            const dSq = odx*odx + ody*ody + odz*odz;
-            const minDist = radius * 1.5; 
-
-            if (dSq < minDist * minDist && dSq > 0.0001) {
-                const d = Math.sqrt(dSq);
-                const push = (minDist - d) * 0.05; 
-                cx += (odx / d) * push;
-                cy += (ody / d) * push;
-                cz += (odz / d) * push;
+        orbitGroupsRef.current.forEach((orbit, i) => {
+            if (orbit) {
+                const config = ORBIT_DATA[i];
+                const baseSpeed = config.speed * 0.3; 
+                const accelSpeed = config.speed * totalIntensity * 1.5;
+                const finalSpeed = baseSpeed + accelSpeed;
+                orbit.rotation.y -= finalSpeed * delta;
             }
-        }
-
-        // --- 5. Integrate Position ---
-        v.x += ax + ix + cx;
-        v.y += ay + iy + cy;
-        v.z += az + iz + cz;
-
-        v.x *= DAMPING;
-        v.y *= DAMPING;
-        v.z *= DAMPING;
-
-        const speed = Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-        if (speed > MAX_VELOCITY) {
-            const scale = MAX_VELOCITY / speed;
-            v.x *= scale;
-            v.y *= scale;
-            v.z *= scale;
-        }
-
-        object.position.x += v.x;
-        object.position.y += v.y;
-        object.position.z += v.z;
-
-        // --- 6. Integrate Rotation (Spring to Base Rotation) ---
-        // Apply torque towards base rotation
-        av.x += (baseRot.x - object.rotation.x) * ROT_STIFFNESS;
-        av.y += (baseRot.y - object.rotation.y) * ROT_STIFFNESS;
-        av.z += (baseRot.z - object.rotation.z) * ROT_STIFFNESS;
-
-        av.x *= ROT_DAMPING;
-        av.y *= ROT_DAMPING;
-        av.z *= ROT_DAMPING;
-
-        object.rotation.x += av.x;
-        object.rotation.y += av.y;
-        object.rotation.z += av.z;
+        });
     });
-  });
 
-  return (
-    <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 10, 7]} intensity={0.8} />
-      <pointLight position={[-10, -5, 5]} intensity={0.5} color="#ffffff" />
-      <Environment files="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr" />
+    return (
+        <PresentationControls
+            global={false} 
+            cursor={true}
+            snap={true}       
+            speed={1.5} 
+            zoom={0.8} 
+            rotation={[0, 0, 0]} 
+            polar={[-Math.PI / 4, Math.PI / 4]} 
+            azimuth={[-Math.PI / 4, Math.PI / 4]} 
+        >
+            <group 
+                onPointerOver={() => setIsHovered(true)}
+                onPointerOut={() => setIsHovered(false)}
+            >
+                <group ref={groupRef}>
+                    {/* 实体球体：高分段数以支持 displacement */}
+                    <mesh>
+                        <sphereGeometry args={[0.9, 128, 128]} />
+                        <primitive object={sphereMaterial} attach="material" />
+                    </mesh>
 
-      <group ref={group}>
-        {data.baseTargets.map((_, i) => {
-            const iconUrl = ICON_URLS[i % ICON_URLS.length];
-            const startX = (Math.random() - 0.5) * 10; 
-            const startY = (Math.random() - 0.5) * 10;
-            const startZ = (Math.random() - 0.5) * 10 - 5; 
-
-            // Scale adjusted to 0.3 as requested
-            const scale = 0.3;
-
-            return (
-                <group 
-                    key={i} 
-                    position={[startX, startY, startZ]}
-                    rotation={[Math.random() * Math.PI, Math.random() * Math.PI, 0]}
-                >
-                     <IconMesh url={iconUrl} scale={scale} />
+                    {/* 独立光效层 (Halo) */}
+                    <mesh scale={[1.15, 1.15, 1.15]}>
+                        <sphereGeometry args={[0.9, 32, 32]} />
+                        <meshBasicMaterial 
+                            color="#ffffff" 
+                            transparent 
+                            opacity={0.15} 
+                            blending={THREE.AdditiveBlending} 
+                            side={THREE.BackSide} 
+                        />
+                    </mesh>
                 </group>
-            );
-        })}
-      </group>
-    </>
-  );
+
+                {/* 原子轨道 */}
+                <group>
+                    {ICON_URLS.map((url, i) => {
+                        const config = ORBIT_DATA[i];
+                        return (
+                            <group 
+                                key={i} 
+                                rotation={[
+                                    THREE.MathUtils.degToRad(config.tiltX), 
+                                    0, 
+                                    THREE.MathUtils.degToRad(config.tiltZ)
+                                ]}
+                            >
+                                <group ref={el => orbitGroupsRef.current[i] = el}>
+                                    <group rotation={[0, config.phase, 0]}>
+                                        <group position={[config.radius, 0, 0]}>
+                                            <OrbitingIcon 
+                                                url={url} 
+                                                position={[0, 0, 0]} 
+                                                rotation={[0, -Math.PI / 2, 0]} 
+                                                material={iconMaterial} 
+                                                scale={0.25} 
+                                            />
+                                        </group>
+                                    </group>
+                                </group>
+                            </group>
+                        );
+                    })}
+                </group>
+
+                <pointLight position={[10, 5, 5]} intensity={10} color="#ffffff" />
+                <pointLight position={[-10, -5, -5]} intensity={5} color="#6666ff" />
+                <spotLight position={[0, 10, 0]} intensity={15} color="#ffffff" angle={0.5} penumbra={0.5} />
+                <Environment preset="city" />
+            </group>
+        </PresentationControls>
+    );
 };
 
-export const FooterSmiley: React.FC = () => {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  useFrame((state) => {
-    if (meshRef.current) {
-        const x = (state.mouse.x * Math.PI) / 4;
-        const y = (state.mouse.y * Math.PI) / 4;
-        meshRef.current.rotation.set(-y, x, 0);
-    }
-  });
-
-  return (
-    <group>
-        <ambientLight intensity={0.8} />
-        <pointLight position={[10, 10, 10]} />
-        <Float speed={5} rotationIntensity={0.2} floatIntensity={0.2}>
-            <mesh ref={meshRef}>
-                 <torusKnotGeometry args={[1, 0.3, 100, 16]} />
-                 <meshStandardMaterial color="#FF3333" roughness={0.2} metalness={0.8} />
-            </mesh>
-        </Float>
-    </group>
-  );
-};
+export const MagnetScene: React.FC = () => null;
+export const FooterSmiley: React.FC = () => null;

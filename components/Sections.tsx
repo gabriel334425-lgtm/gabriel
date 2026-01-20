@@ -1,247 +1,271 @@
-import React, { Suspense, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { Suspense, useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Play, ArrowUpRight, ArrowRight } from 'lucide-react';
-import { ExperienceItem, ProjectItem } from '../types.ts';
-import { MagnetScene } from './SceneElements.tsx';
+import { Play } from 'lucide-react';
+import { Canvas, useThree, useFrame, extend } from '@react-three/fiber';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass';
+import { ExperienceItem, ProjectItem } from '../types';
+import { SaturnModel } from './SceneElements';
+import * as THREE from 'three';
 
-// --- Error Boundary ---
-interface ErrorBoundaryProps {
-  children?: React.ReactNode;
-  fallback?: React.ReactNode;
-}
+extend({ EffectComposer, RenderPass, UnrealBloomPass, OutputPass });
 
-interface ErrorBoundaryState {
-  hasError: boolean;
-}
+// --- 核心修改：更新为 HYXiangSuRuQinJ 字体 ---
+const PIXEL_FONT_URL = "https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/HYXiangSuRuQinJ-2.ttf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vSFlYaWFuZ1N1UnVRaW5KLTIudHRmIiwiaWF0IjoxNzY4OTAzMDU5LCJleHAiOjIwODQyNjMwNTl9.HFFV9-TVa5bnCI-oKfb4m1xcqpXRPLdLduWtjm7sEB0";
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false };
+const GlowEffect = () => {
+  const { gl, scene, camera, size } = useThree();
+  const composer = useRef<EffectComposer>(null);
+  
+  useEffect(() => composer.current?.setSize(size.width, size.height), [size]);
+  useFrame(() => composer.current?.render(), 1);
 
-  static getDerivedStateFromError() { return { hasError: true }; }
+  return (
+    <effectComposer ref={composer} args={[gl]}>
+      <renderPass attach="passes-0" args={[scene, camera]} />
+      <unrealBloomPass 
+        attach="passes-1" 
+        args={[new THREE.Vector2(size.width, size.height), 1.5, 0.4, 0.85]} 
+        strength={0.4} 
+        radius={0.6} 
+        threshold={0.8} 
+      />
+      <outputPass attach="passes-2" />
+    </effectComposer>
+  );
+};
 
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback || <div className="p-4 text-[10px] font-mono opacity-50 uppercase tracking-widest">3D Context Error</div>;
-    }
-    return this.props.children;
-  }
-}
-
-// --- Experience Section ---
+// --- 1. Experience (不变) ---
 export const Experience: React.FC<{ items: ExperienceItem[] }> = ({ items }) => {
   return (
-    <section id="experience" className="bg-dark text-white w-full py-32 border-t border-white/5 overflow-visible relative">
-      <div className="w-full px-[4vw] grid grid-cols-1 lg:grid-cols-4 gap-16 text-start">
-        <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-32">
-                <span className="text-accent text-xs font-mono tracking-widest block mb-6 uppercase italic">01 / CAREER ARCHIVE</span>
-                <h2 className="text-[clamp(2.5rem,4vw,4rem)] font-black tracking-tighter leading-none italic uppercase mb-10">工作经历</h2>
-                <div className="w-full aspect-square relative opacity-30 mix-blend-screen max-w-[280px]">
-                    <ErrorBoundary>
-                        <Canvas gl={{ alpha: true }}>
-                            <Suspense fallback={null}>
-                                <MagnetScene />
-                            </Suspense>
-                        </Canvas>
-                    </ErrorBoundary>
-                </div>
-            </div>
+    <section className="relative pt-24 pb-4 px-[4vw] w-full max-w-[3840px] mx-auto">
+        <div className="mb-20 pl-8 border-l-2 border-white/20">
+            <span className="text-red-600 font-mono text-sm font-bold tracking-[0.2em] uppercase block mb-3">
+                / EXPERIENCE
+            </span>
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-none mb-4">
+                工作经历
+            </h2>
+            <p className="text-white/40 font-mono text-xs tracking-widest uppercase">
+                Career Archive / 2012-2025
+            </p>
         </div>
-        <div className="lg:col-span-3 relative">
-            <div className="flex flex-col border-t border-white/5">
-                {items.map((item, index) => (
-                    <motion.div 
-                        key={index}
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ delay: index * 0.15, duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-                        className="grid grid-cols-1 md:grid-cols-12 py-16 border-b border-white/5 group relative cursor-pointer overflow-hidden"
-                        data-cursor="link"
-                    >
-                        <div className="md:col-span-2 text-gray-500 font-mono text-sm group-hover:text-accent transition-colors duration-500 uppercase tracking-tighter">
-                            {item.period}
-                        </div>
-                        <div className="md:col-span-10 pl-0 md:pl-10 relative">
-                            <h3 className="text-[clamp(1.5rem,2.8vw,2.8rem)] font-bold mb-4 text-white group-hover:text-accent transition-colors duration-500 uppercase italic tracking-tighter leading-none">
-                                {item.company}
-                            </h3>
-                            <p className="text-[10px] font-mono uppercase tracking-[4px] text-gray-400 mb-8 flex items-center gap-3">
-                                <span className="w-4 h-[1px] bg-gray-600"></span> {item.role}
-                            </p>
-                            <p className="text-gray-500 group-hover:text-gray-300 transition-colors duration-700 leading-relaxed text-[clamp(1rem,1.1vw,1.2rem)] font-light max-w-4xl">
-                                {item.description}
-                            </p>
-                        </div>
-                        {/* Interactive Background Reveal on Hover */}
-                        <div className="absolute inset-0 bg-white/[0.02] translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-700 ease-[0.23,1,0.32,1] pointer-events-none"></div>
-                    </motion.div>
-                ))}
-            </div>
+
+        <div className="space-y-12">
+            {items.map((item, idx) => (
+                <ExperienceRow key={idx} item={item} index={idx} />
+            ))}
         </div>
-      </div>
     </section>
   );
 };
 
-// --- Values Section ---
-export const Values: React.FC = () => {
-    const values = [
-        { title: "全案操盘与策略落地", enTitle: "Full-link Strategy", desc: "具备从0-1产品定位推导到1-N长线运营的全链路操盘经验，精准把控营销节奏。" },
-        { title: "商业导向的视觉把控", enTitle: "Commercial Art Direction", desc: "设计科班出身，致力于将抽象策略转化为具象视觉，构建项目核心竞争壁垒。" },
-        { title: "效能体系与AIGC革新", enTitle: "Workflow Efficiency", desc: "擅长构建标准化产出SOP，通过引入前沿AIGC工作流，重构传统产能天花板。" }
-    ];
+const ExperienceRow = ({ item, index }: { item: ExperienceItem, index: number }) => {
+    const parts = item.description.split('。');
+    const firstSentence = parts[0] ? parts[0] + '。' : '';
+    const restContent = parts.slice(1).join('。');
+
     return (
-        <section id="masterpiece" className="bg-dark text-white border-t border-white/5 py-32 w-full px-[4vw] text-start">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
-                <div className="lg:col-span-1">
-                    <span className="text-accent text-xs font-mono tracking-widest block mb-6 uppercase italic">02 / CORE CAPABILITY</span>
-                    <h2 className="text-[clamp(2.5rem,4vw,4rem)] font-black tracking-tighter italic uppercase leading-none">核心能力</h2>
+        <motion.div 
+            className="group relative grid grid-cols-1 md:grid-cols-[1fr_2fr_4fr] gap-4 md:gap-12 py-10 border-t border-white/10 hover:border-white/30 transition-colors duration-500"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ delay: index * 0.1 }}
+        >
+            <div className="font-mono text-sm text-white/40 group-hover:text-red-600 transition-colors duration-300 pt-1">
+                {item.period}
+            </div>
+            <div>
+                <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-red-600 transition-colors duration-300">
+                    {item.company}
+                </h3>
+                <p className="text-white/50 font-light italic">{item.role}</p>
+            </div>
+            <div className="text-base leading-relaxed text-white/60">
+                <span className="text-white font-bold block mb-3 group-hover:text-white transition-colors duration-300">
+                    {firstSentence}
+                </span>
+                {restContent && (
+                    <span className="font-light block text-justify opacity-80">
+                        {restContent}
+                    </span>
+                )}
+            </div>
+        </motion.div>
+    );
+};
+
+// --- 2. Marquee (不变) ---
+export const Marquee: React.FC<{ items: string[] }> = ({ items }) => {
+  return (
+    <div className="relative w-full overflow-hidden flex py-2 bg-black border-y border-white/5">
+      <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black to-transparent z-10"></div>
+      <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black to-transparent z-10"></div>
+      <motion.div 
+        className="flex gap-12 md:gap-24 whitespace-nowrap"
+        animate={{ x: ["0%", "-50%"] }}
+        transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
+      >
+        {[...items, ...items].map((text, i) => (
+          <div key={i} className="flex items-center gap-6 group cursor-default">
+             <span className="text-2xl md:text-5xl font-black text-white/20 group-hover:text-white transition-all duration-700 uppercase italic tracking-tighter">
+                {text}
+             </span>
+             <div className="w-1.5 h-1.5 bg-red-600 rounded-full opacity-20 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
+
+// --- 3. Values (设计理念) - 像素字体 & 噪波材质 ---
+const formatText = (text: string) => {
+    let processed = text
+        .replace(/：/g, ':')
+        .replace(/，/g, ',')
+        .replace(/；/g, ';')
+        .replace(/。/g, '.');
+    
+    // 按标点分行
+    const parts = processed.split(/([:;,.] )|([:;,.\n])/g).filter(Boolean).join("").split('|');
+    const sentences = processed.match(/[^:;,.]*[:;,.]/g) || [processed];
+    return sentences;
+};
+
+export const Values: React.FC = () => {
+  const containerRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  });
+
+  const opacity = useTransform(scrollYProgress, [0.2, 0.4, 0.7, 0.9], [0, 1, 1, 0]);
+  const scale = useTransform(scrollYProgress, [0.2, 0.5], [0.8, 1]);
+
+  const topText = "我始终追求一种平衡：既要对商业数据极敏感，确保方向正确；又希望建立系统化壁垒，为伙伴留出试错空间。";
+  const bottomText = "因为底层逻辑足够扎实，天马行空的创意，才能落地为打动市场的作品。";
+
+  return (
+    <section 
+        ref={containerRef} 
+        className="bg-black py-0 px-[4vw] relative overflow-hidden w-full h-[100vh] flex flex-col justify-center border-t border-white/10"
+    >
+        {/* 注入 HYPixel 字体 */}
+        <style>{`
+            @font-face {
+                font-family: 'HYPixel';
+                src: url('${PIXEL_FONT_URL}') format('truetype');
+            }
+        `}</style>
+
+        {/* 3D 背景 */}
+        <motion.div 
+            style={{ opacity, scale }}
+            className="absolute inset-0 z-0 flex items-center justify-center pointer-events-auto"
+        >
+            <Canvas camera={{ position: [0, 0, 8], fov: 40 }} gl={{ alpha: true, antialias: false }}>
+                <Suspense fallback={null}>
+                    <SaturnModel />
+                </Suspense>
+                <GlowEffect />
+            </Canvas>
+        </motion.div>
+
+        {/* 文本层：应用 HYPixel 字体 */}
+        <motion.div 
+            style={{ opacity }}
+            className="relative z-10 w-full h-full max-w-[1920px] mx-auto flex flex-col justify-between py-[12vh] pointer-events-none"
+        >
+            {/* 左上 */}
+            <div className="w-full md:w-2/3 text-left">
+                {formatText(topText).map((line, i) => (
+                    <h3 
+                        key={i} 
+                        style={{ fontFamily: 'HYPixel, monospace' }}
+                        className="text-[clamp(2.5rem,3.5vw,5rem)] leading-[1.1] text-transparent bg-clip-text bg-gradient-to-br from-[#FFFFFF] via-[#DDDDDD] to-[#777777] mb-2"
+                    >
+                        {line}
+                    </h3>
+                ))}
+            </div>
+
+            {/* 右下 */}
+            <div className="w-full md:w-2/3 self-end text-right mt-auto">
+                {formatText(bottomText).map((line, i) => (
+                    <h3 
+                        key={i} 
+                        style={{ fontFamily: 'HYPixel, monospace' }}
+                        className="text-[clamp(2.5rem,3.5vw,5rem)] leading-[1.1] text-transparent bg-clip-text bg-gradient-to-tl from-[#FFFFFF] via-[#DDDDDD] to-[#777777] mb-2"
+                    >
+                        {line}
+                    </h3>
+                ))}
+            </div>
+        </motion.div>
+    </section>
+  );
+};
+
+// --- 其他组件保持不变 ---
+export const SelectedWorks: React.FC<{ works: ProjectItem[], onSelect: (id: string) => void }> = ({ works, onSelect }) => {
+    return (
+        <section id="works" className="bg-dark text-white py-32 px-[4vw]">
+            <div className="flex justify-between items-end mb-20 border-b border-white/10 pb-10">
+                <div>
+                    <span className="text-red-600 font-mono text-sm font-bold tracking-[0.2em] uppercase block mb-3">/ SELECTED WORKS</span>
+                    <h2 className="text-5xl font-black tracking-tighter leading-none">精选案例</h2>
                 </div>
-                <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-12">
-                    {values.map((v, i) => (
-                        <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.2, duration: 0.8 }} className="group relative border-t border-white/10 pt-16" data-cursor="link">
-                            <div className="absolute top-6 left-0 text-white/5 text-[clamp(4rem,7vw,8rem)] font-black z-0 pointer-events-none italic">0{i+1}</div>
-                            <div className="relative z-10">
-                                <h3 className="text-[clamp(1.25rem,1.6vw,1.6rem)] font-bold mb-4 group-hover:text-accent transition-colors duration-500 uppercase italic leading-tight">{v.title}</h3>
-                                <p className="text-[9px] text-gray-500 font-mono mb-8 uppercase tracking-[4px]">{v.enTitle}</p>
-                                <p className="text-gray-400 text-[1rem] leading-relaxed font-light">{v.desc}</p>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                <span className="font-mono text-[10px] text-white/30 uppercase tracking-[4px] hidden md:block">Project Archive 2020-2025</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
+                {works.map((work) => (
+                    <div key={work.id} onClick={() => onSelect(work.id)} className="group cursor-pointer relative aspect-[16/10] overflow-hidden rounded-sm bg-white/[0.03]">
+                        <img src={work.imageUrl} alt={work.title} className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
+                        <div className="absolute bottom-10 left-10">
+                            <h3 className="text-3xl font-black italic uppercase tracking-tighter">{work.title}</h3>
+                            <p className="text-accent font-mono text-[10px] tracking-[4px] uppercase mt-2">{work.subtitle}</p>
+                        </div>
+                    </div>
+                ))}
             </div>
         </section>
     );
 };
 
-// --- Project Card Component with Parallax ---
-const ProjectCard: React.FC<{ work: ProjectItem, onSelect: (id: string) => void }> = ({ work, onSelect }) => {
-    const ref = useRef<HTMLDivElement>(null);
-    const { scrollYProgress } = useScroll({
-        target: ref,
-        offset: ["start end", "end start"]
-    });
-    const y = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]); // Parallax movement
-
-    return (
-        <motion.div 
-            ref={ref}
-            initial={{ opacity: 0, scale: 0.95 }} 
-            whileInView={{ opacity: 1, scale: 1 }} 
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }} 
-            onClick={() => onSelect(work.id)} 
-            className="group cursor-pointer relative aspect-[16/10] overflow-hidden rounded-sm bg-white/[0.03]" 
-            data-cursor="link"
-        >
-            <motion.div style={{ y }} className="absolute inset-0 w-full h-[120%] -top-[10%]">
-                 <img src={work.imageUrl} alt={work.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-80 group-hover:opacity-100" />
-            </motion.div>
-            
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90 transition-opacity duration-700 group-hover:opacity-70"></div>
-            <div className="absolute bottom-0 left-0 w-full p-[4vw] md:p-12 flex justify-between items-end">
-                <div className="max-w-[70%]">
-                    <h3 className="text-[clamp(1.5rem,3vw,3rem)] font-black text-white mb-3 uppercase italic tracking-tighter leading-none">{work.title}</h3>
-                    <p className="text-accent text-[10px] font-mono uppercase tracking-[4px] mb-1">{work.subtitle}</p>
-                </div>
-                <div className="w-14 h-14 border border-white/20 rounded-full flex items-center justify-center group-hover:bg-accent group-hover:border-accent group-hover:scale-110 transition-all duration-500">
-                    <ArrowUpRight size={28} className="text-white" strokeWidth={1.5} />
-                </div>
-            </div>
-        </motion.div>
-    )
-}
-
-// --- Selected Works Section ---
-export const SelectedWorks: React.FC<{ works: ProjectItem[], onSelect: (id: string) => void }> = ({ works, onSelect }) => {
-    return (
-        <section id="showcase" className="bg-darklighter text-white border-t border-white/5 py-32 w-full px-[4vw] text-start">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-24 pb-12 border-b border-white/10">
-                <div>
-                    <span className="text-accent text-xs font-mono tracking-widest block mb-6 uppercase italic">03 / PROJECT ARCHIVE</span>
-                    <h2 className="text-[clamp(2.5rem,4vw,4rem)] font-black tracking-tighter italic uppercase leading-none">精选项目</h2>
-                </div>
-                <div className="text-gray-500 font-mono text-[9px] text-right uppercase tracking-[4px] opacity-40">NetEase Games division / 2025</div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
-                {works.map((work) => (
-                    <ProjectCard key={work.id} work={work} onSelect={onSelect} />
-                ))}
-            </div>
-        </section>
-    );
-}
-
-// --- Marquee Section ---
-export const Marquee: React.FC = () => {
-    const games = ["阴阳师", "哈利波特", "暗黑破坏神", "率土之滨", "萤火突击", "巅峰极速", "漫威争锋", "明日之后"];
-    return (
-        <div className="bg-accent border-y border-accent py-12 overflow-hidden relative z-10 w-full flex items-center">
-             <div className="flex whitespace-nowrap gap-24 animate-marquee items-center">
-                {[...Array(2)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-24">
-                        {games.map((game, idx) => (
-                            <React.Fragment key={`${i}-${idx}`}>
-                                <span className="text-white font-black text-[clamp(2rem,3.5vw,4rem)] tracking-tighter italic uppercase leading-none">{game}</span>
-                                <div className="w-4 h-4 bg-white rounded-full opacity-30 shadow-[0_0_15px_rgba(255,255,255,0.5)]"></div>
-                            </React.Fragment>
-                        ))}
-                    </div>
-                ))}
-             </div>
-        </div>
-    )
-}
-
-// --- Visual Archive Section ---
 export const VisualDesign: React.FC = () => {
     return (
-        <section id="visuals" className="bg-dark text-white w-full py-32 border-t border-white/5 px-[4vw]">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-16 text-start">
-                <div className="lg:col-span-1">
-                    <span className="text-accent text-xs font-mono tracking-widest block mb-6 uppercase italic">04 / VISUAL ARCHIVE</span>
-                    <h2 className="text-[clamp(2.5rem,4vw,4rem)] font-black tracking-tighter italic uppercase mb-10">视觉创意</h2>
-                    <button className="text-[10px] font-bold border border-white/20 px-10 py-5 hover:bg-white hover:text-black hover:border-white transition-all duration-500 uppercase tracking-[4px] italic" data-cursor="link">DISCOVERY</button>
-                </div>
-                <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {[...Array(8)].map((_, i) => (
-                        <motion.div 
-                            key={i} 
-                            initial={{ opacity: 0 }}
-                            whileInView={{ opacity: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: i * 0.1 }}
-                            className="aspect-square bg-white/5 relative group overflow-hidden cursor-pointer" 
-                            data-cursor="link"
-                        >
-                            <img src={`https://picsum.photos/600/600?random=${i+100}`} className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt="Design Fragment" />
-                            <div className="absolute inset-0 bg-accent/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-110 group-hover:scale-100"><ArrowRight className="text-white w-12 h-12" strokeWidth={1.5} /></div>
-                        </motion.div>
-                    ))}
-                </div>
+        <section id="visual" className="bg-dark text-white py-32 px-[4vw] border-t border-white/5">
+            <div className="mb-20">
+                <span className="text-red-600 font-mono text-sm font-bold tracking-[0.2em] uppercase block mb-3">/ VISUAL ARCHIVE</span>
+                <h2 className="text-5xl font-black tracking-tighter">视觉实验</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => (
+                    <div key={i} className="aspect-square bg-white/5 group overflow-hidden relative cursor-pointer">
+                        <img src={`https://picsum.photos/600/600?random=${i+200}`} className="w-full h-full object-cover grayscale opacity-30 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt="Design" />
+                    </div>
+                ))}
             </div>
         </section>
     );
-}
+};
 
-// --- Video Showreel Section ---
 export const Showreel: React.FC = () => {
     return (
-        <section id="video" className="bg-dark border-t-4 border-accent w-full" data-cursor="video">
-            <div className="w-full aspect-video relative group cursor-pointer overflow-hidden">
-                <img src="https://picsum.photos/1920/1080?random=200" alt="Video Cover" className="w-full h-full object-cover opacity-40 group-hover:opacity-20 transition-all duration-[1.5s] ease-in-out group-hover:scale-110" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
-                    <div className="w-24 h-24 bg-accent rounded-full flex items-center justify-center mb-12 group-hover:scale-110 transition-transform duration-700 shadow-[0_0_50px_rgba(255,51,51,0.5)]">
-                        <Play className="w-10 h-10 text-white fill-white ml-2" />
-                    </div>
-                    <h2 className="text-[clamp(2.5rem,8vw,10rem)] font-black text-white tracking-tighter italic uppercase leading-none">SHOWREEL 2025</h2>
-                    <p className="mt-6 text-[10px] font-mono tracking-[12px] text-gray-500 uppercase opacity-40 italic">FULL MOTION ARCHIVE / MOTION GRAPHICS</p>
-                </div>
-                {/* Scanline Effect */}
-                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 bg-[length:100%_2px,3px_100%]"></div>
+        <section id="showreel" className="bg-dark border-t-4 border-accent w-full py-40 flex flex-col items-center">
+            <div className="absolute pointer-events-none flex flex-col items-center">
+                <span className="text-red-600 font-mono text-sm font-bold tracking-[0.2em] uppercase block mb-4">/ SHOWREEL</span>
+                <h2 className="text-[12vw] font-black text-white/10 tracking-tighter leading-none">动态影像</h2>
+            </div>
+            <div className="w-full max-w-6xl aspect-video bg-white/5 flex items-center justify-center border border-white/10 group cursor-pointer relative overflow-hidden rounded-sm z-10 hover:border-accent/50 transition-colors duration-500">
+                <Play size={80} className="text-accent group-hover:scale-110 transition-transform duration-500 fill-accent" />
+                <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
         </section>
     );
-}
+};
