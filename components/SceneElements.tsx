@@ -1,3 +1,4 @@
+
 import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Float, Environment, useGLTF, PresentationControls } from '@react-three/drei';
@@ -58,11 +59,12 @@ const useNoiseTexture = () => {
 };
 
 const OrbitingIcon = ({ url, position, rotation, material, scale = 0.22 }: any) => {
-    const { scene } = useGLTF(url);
+    // Add cast to any to fix property 'scene' does not exist error on union type
+    const { scene } = useGLTF(url) as any;
     const clone = useMemo(() => {
         const c = scene.clone();
         const toRemove: THREE.Object3D[] = [];
-        c.traverse((child) => {
+        c.traverse((child: any) => {
              if ((child as THREE.Mesh).isMesh) {
                  const m = child as THREE.Mesh;
                  if (

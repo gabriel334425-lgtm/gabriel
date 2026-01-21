@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useLayoutEffect } from 'react';
-import { Canvas, useFrame, useThree, extend, ThreeElement } from '@react-three/fiber';
+
+import React, { useEffect, useRef, useLayoutEffect, useMemo } from 'react';
+import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
 import { Environment, Text, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
@@ -10,16 +11,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass';
 
 extend({ EffectComposer, RenderPass, UnrealBloomPass, OutputPass });
 
-// Fix for JSX intrinsic elements by augmenting the ThreeElements interface.
-// Using 'any' to avoid "Subsequent property declarations" errors caused by type mismatches with existing definitions in some versions of @react-three/fiber.
-declare module '@react-three/fiber' {
-  interface ThreeElements {
-    effectComposer: any;
-    renderPass: any;
-    unrealBloomPass: any;
-    outputPass: any;
-  }
-}
+// Remove explicit interface augmentation as it causes conflicts with existing declarations in @react-three/fiber.
 
 const FONT_URL = 'https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/66670969d30648d8e967997c_Sudo.ttf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vNjY2NzA5NjlkMzA2NDhkOGU5Njc5OTdjX1N1ZG8udHRmIiwiaWF0IjoxNzY4ODEzODAxLCJleHAiOjE4MDAzNDk4MDF9.PijtCC_WFtprXXLQdzWSjF0bxIu_VzmMKv3DgIbAztU';
 
@@ -28,13 +20,20 @@ const MODEL_URL = 'https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/si
 const PostProcessing = () => {
   const { gl, scene, camera, size } = useThree();
   const composer = useRef<EffectComposer>(null);
+
+  // Use useMemo to avoid re-creating passes every frame and fix JSX intrinsic element errors
+  const bloomPass = useMemo(() => new UnrealBloomPass(new THREE.Vector2(size.width, size.height), 1.5, 0.4, 0.85), [size.width, size.height]);
+  const outPass = useMemo(() => new OutputPass(), []);
+
   useEffect(() => composer.current?.setSize(size.width, size.height), [size]);
   useFrame(() => composer.current?.render(), 1);
   return (
     <effectComposer ref={composer} args={[gl]}>
       <renderPass attach="passes-0" args={[scene, camera]} />
-      <unrealBloomPass attach="passes-1" args={[new THREE.Vector2(size.width, size.height), 1.5, 0.4, 0.85]} strength={0.4} radius={0.5} threshold={1.0} />
-      <outputPass attach="passes-2" />
+      {/* Use primitive to fix 'Property unrealBloomPass does not exist on type JSX.IntrinsicElements' */}
+      <primitive object={bloomPass} attach="passes-1" strength={0.4} radius={0.5} threshold={1.0} />
+      {/* Use primitive to fix 'Property outputPass does not exist on type JSX.IntrinsicElements' */}
+      <primitive object={outPass} attach="passes-2" />
     </effectComposer>
   );
 };
@@ -91,7 +90,6 @@ const SceneContent = ({ playIntro, onAnimComplete }: { playIntro: boolean; onAni
              material.onBeforeCompile = (shader) => {
                shader.uniforms.uRes = { value: 80.0 }; 
                m.userData.shader = shader;
-               // Fixed: Added \n after uniform declaration to prevent concatenation with preprocessor directives
                shader.vertexShader = `uniform float uRes;\n${shader.vertexShader}`.replace(
                  '#include <project_vertex>',
                  `vec4 mvPosition = vec4( transformed, 1.0 );

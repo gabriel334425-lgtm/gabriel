@@ -1,16 +1,14 @@
-import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import Lenis from 'lenis';
-import { Canvas } from '@react-three/fiber';
-import Hero from './components/Hero';
-import { Experience, Values, SelectedWorks, Marquee, VisualDesign, Showreel } from './components/Sections';
-import Modal from './components/Modal';
+import { motion } from 'framer-motion';
 import Header from './components/Header';
+import Hero from './components/Hero';
+import { Experience, Values, Marquee, ProjectStack } from './components/Sections';
 import { HeroModel, ParticleBackground } from './components/SceneElements';
 import { LayoutGrid, CustomCursor } from './components/UI';
-import { ExperienceItem, ProjectItem, FlagshipDetails } from './types';
+import { ExperienceItem } from './types';
 
-// --- 职业旅程文案 ---
+// --- 职业旅程数据 ---
 const experienceData: ExperienceItem[] = [
   {
     period: "2020 - 2025",
@@ -38,13 +36,6 @@ const experienceData: ExperienceItem[] = [
   }
 ];
 
-const worksData: ProjectItem[] = [
-  { id: 'stzb', title: '率土之滨', subtitle: '地域服营销 · 增长策略', tags: ['Strategy', 'Design'], imageUrl: 'https://picsum.photos/800/450?random=1' },
-  { id: 'racing', title: '巅峰极速', subtitle: 'AI应用 · 降本增效', tags: ['AI Workflow', 'Visuals'], imageUrl: 'https://picsum.photos/800/450?random=2' },
-  { id: 'knives', title: '荒野行动', subtitle: '电竞赛事视觉重构', tags: ['Esports', 'Branding'], imageUrl: 'https://picsum.photos/800/450?random=3' },
-  { id: 'lostlight', title: '萤火突击', subtitle: 'S级项目全案发行', tags: ['Full Case', 'Launch'], imageUrl: 'https://picsum.photos/800/450?random=4' },
-];
-
 const ipData = [
   "大话西游", "梦幻西游", 
   "荒野行动", "暗黑破坏神：不朽", "哈利波特：魔法觉醒", 
@@ -54,8 +45,6 @@ const ipData = [
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [activeProject, setActiveProject] = useState<FlagshipDetails | null>(null);
   const [isMuted, setIsMuted] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -113,42 +102,10 @@ const App: React.FC = () => {
     }
   };
 
-  const handleOpenProject = (id: string) => {
-    const project = worksData.find(p => p.id === id);
-    if (!project) return;
-    setActiveProject({
-        id: project.id,
-        title: project.title,
-        role: "Lead Designer / Art Direction",
-        content: (
-          <div className="space-y-12">
-            <div className="aspect-video bg-white/5 rounded-sm overflow-hidden relative group">
-              <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover opacity-80" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="md:col-span-2 space-y-6">
-                <h3 className="text-3xl font-black italic uppercase italic">Project Overview</h3>
-                <p className="text-white/60 leading-relaxed font-light">
-                  This project involved creating a comprehensive visual identity and marketing strategy for {project.title}.
-                </p>
-              </div>
-              <div className="space-y-6">
-                <h4 className="text-sm font-mono uppercase tracking-widest text-accent">Deliverables</h4>
-                <ul className="space-y-2 text-sm text-white/40">
-                  {project.tags.map(tag => <li key={tag}>— {tag}</li>)}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )
-    });
-    setModalOpen(true);
-  };
-
   return (
     <div 
       ref={containerRef}
-      className={`selection:bg-white selection:text-black w-full text-white font-sans relative
+      className={`selection:bg-red-600 selection:text-white w-full text-white font-sans relative
         ${loading ? 'h-screen overflow-hidden fixed inset-0' : 'min-h-screen'}`}
       style={{
         backgroundColor: '#000',
@@ -193,67 +150,10 @@ const App: React.FC = () => {
 
         <Values />
         
-        {/* 旗舰案例 - 封面图已替换 */}
-        <section id="flagship" className="relative w-full h-[80vh] overflow-hidden group border-y border-white/5" data-cursor="video">
-             <div className="absolute inset-0 w-full h-full cursor-pointer" onClick={() => handleOpenProject('lostlight')}>
-                 <img 
-                    src="https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/H75-1.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vSDc1LTEuanBnIiwiaWF0IjoxNzY4ODk5NzM2LCJleHAiOjIwODQyNTk3MzZ9.RoEErK2ORTUb0oR6gGo06_ag62wFQNBstCC_-SZsloU" 
-                    className="absolute inset-0 w-full h-full object-cover opacity-40 transition-transform duration-1000 group-hover:scale-105" 
-                    alt="Flagship" 
-                 />
-                 <div className="absolute inset-0 bg-gradient-to-t from-[#020204] via-transparent to-[#020204]/40"></div>
-                 <div className="absolute top-0 left-0 w-full h-full px-[4vw] flex flex-col justify-center pt-32 items-start z-10">
-                    <span className="text-white/40 text-[10px] font-mono uppercase tracking-[6px] mb-4">S-TIER FLAGSHIP CASE</span>
-                    <h2 className="text-[clamp(3rem,8vw,8rem)] font-black text-white tracking-tighter leading-none mb-8 italic uppercase drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]">萤火突击</h2>
-                    <div className="max-w-xl border-l-4 border-white/20 pl-6">
-                        <p className="text-white/70 text-[clamp(1rem,1.5vw,1.25rem)] font-light leading-relaxed mb-6">本案例展示如何通过标准化的视觉规范与前置 AIGC 工作流，重构 S 级项目的创作效能。</p>
-                    </div>
-                </div>
-             </div>
-        </section>
+        {/* 全屏堆叠容器 */}
+        <ProjectStack works={[]} />
 
-        <SelectedWorks works={worksData} onSelect={handleOpenProject} />
-        <VisualDesign />
-        <Showreel />
       </main>
-
-      <footer id="contact" className="bg-[#020204]/50 backdrop-blur-sm text-white py-48 px-[4vw] relative overflow-hidden border-t border-white/10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 w-full relative z-10">
-            <div className="flex flex-col justify-between min-h-[400px]">
-                <h2 className="text-[clamp(4rem,10vw,12rem)] font-black leading-none tracking-tighter italic uppercase drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">LET'S<br /><span className="text-stroke-white text-transparent hover:text-white transition-all duration-700 shadow-[0_0_15px_rgba(255,255,255,0.3)]">CONNECT.</span></h2>
-                <div className="mt-16 space-y-4">
-                    <a href="mailto:408179683@qq.com" className="text-[clamp(1.5rem,3vw,3rem)] font-black block hover:text-white transition-all tracking-tight text-white/90 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]">408179683@qq.com</a>
-                    <div className="flex items-center gap-3 text-xl font-mono font-bold text-white/40 hover:text-white transition-all duration-300">
-                        <span className="w-10 h-[1px] bg-white/20"></span> 183-9081-0208
-                    </div>
-                </div>
-            </div>
-            <div className="relative w-full h-full min-h-[400px] border border-white/10 bg-white/[0.02] flex flex-col justify-between rounded-sm overflow-hidden group backdrop-blur-sm">
-                <div className="p-6 border-b border-white/5 flex justify-between items-start">
-                    <div className="text-[9px] font-mono uppercase tracking-[4px] text-white/30 italic">Reactive Geometry Fragment</div>
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_10px_rgba(255,255,255,1)]"></div>
-                </div>
-                <div className="absolute inset-0 z-0 flex items-center justify-center opacity-40 group-hover:opacity-100 transition-opacity duration-1000">
-                    <div className="w-full h-full">
-                        <Canvas camera={{ position: [0, 0, 4.5], fov: 45 }} gl={{ alpha: true }}>
-                            <Suspense fallback={null}>
-                                <HeroModel />
-                            </Suspense>
-                        </Canvas>
-                    </div>
-                </div>
-                <div className="relative z-10 p-6 flex justify-between items-end">
-                    <p className="text-[10px] text-white/30 font-mono tracking-widest uppercase">© 2025 ARCHIVE / GYF</p>
-                    <div className="text-right">
-                        <p className="font-black uppercase text-2xl tracking-tighter italic text-white/90 drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">Guo Yifeng</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div className="absolute -bottom-64 -right-64 w-[600px] h-[600px] bg-white/5 rounded-full blur-[150px] pointer-events-none"></div>
-      </footer>
-
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} data={activeProject} />
     </div>
   );
 };

@@ -1,15 +1,12 @@
-
-import React, { useEffect, useState, useLayoutEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpRight, Play } from 'lucide-react';
 
-const FONT_FAMILY = '"Sudo", monospace';
+const FONT_FAMILY = '"Sudo", "Courier New", monospace';
 
-// 核心：统一的动效参数 (The Golden Curve)
-// 这个曲线对应 CSS 的 cubic-bezier(0.22, 1, 0.36, 1)
-// Fix: Explicitly typed as a tuple [number, number, number, number] to satisfy Framer Motion's ease type requirement.
+// 动效曲线
 const REVEAL_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const DURATION = 1.0; // 统一动画时长
+const DURATION = 1.0;
 
 export const LayoutGrid: React.FC = () => {
   return (
@@ -31,23 +28,8 @@ interface PreloaderProps {
 
 export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
   const [step, setStep] = useState(0);
-  const [fontLoaded, setFontLoaded] = useState(false);
-
-  useLayoutEffect(() => {
-    if (document.fonts) {
-      document.fonts.ready.then(() => {
-        document.fonts.load('1em "Sudo"').then(() => {
-          setFontLoaded(true);
-        });
-      });
-    } else {
-      setTimeout(() => setFontLoaded(true), 100);
-    }
-  }, []);
 
   useEffect(() => {
-    if (!fontLoaded) return;
-
     document.body.style.overflow = 'hidden';
 
     const timeline = [
@@ -55,8 +37,8 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       { step: 1, delay: 600 },  
       { step: 2, delay: 1200 }, 
       { step: 3, delay: 1800 }, 
-      { step: 4, delay: 2400 }, // 9|9 Merge
-      { step: 5, delay: 3000 }, // Exit Start
+      { step: 4, delay: 2400 }, 
+      { step: 5, delay: 3000 }, 
     ];
 
     const timers: NodeJS.Timeout[] = [];
@@ -65,7 +47,6 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       const timer = setTimeout(() => {
         setStep(s);
         if (s === 5) {
-          // 给足时间让 exit 动画播完 (1.2s)
           setTimeout(onComplete, 1200); 
         }
       }, delay);
@@ -73,77 +54,87 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
     });
 
     return () => timers.forEach(clearTimeout);
-  }, [onComplete, fontLoaded]);
+  }, [onComplete]);
 
+  // 垂直位移幅度也随字号减小而调整 (从 35 -> 20)
   const getStepData = (s: number) => {
     switch(s) {
-      case 0: return { l: "0", r: "0", vPos: 35 };   
-      case 1: return { l: "3", r: "3", vPos: 25 };   
-      case 2: return { l: "5", r: "6", vPos: 15 };   
-      case 3: return { l: "7", r: "5", vPos: 8 };   
-      case 4: return { l: "9", r: "9", vPos: 0 };    
-      case 5: return { l: "9", r: "9", vPos: 0 };    
-      default: return { l: "0", r: "0", vPos: 0 };
+      case 0: return { l: "0", r: "0", vOffset: 20 };   
+      case 1: return { l: "3", r: "3", vOffset: 15 };   
+      case 2: return { l: "5", r: "6", vOffset: 10 };   
+      case 3: return { l: "7", r: "5", vOffset: 5 };   
+      case 4: return { l: "9", r: "9", vOffset: 0 };    
+      case 5: return { l: "9", r: "9", vOffset: 0 };    
+      default: return { l: "0", r: "0", vOffset: 0 };
     }
   };
 
-  const { l, r, vPos } = getStepData(step);
+  const { l, r, vOffset } = getStepData(step);
   const isFinished = step === 5;
 
   return (
     <AnimatePresence>
-      {fontLoaded && !isFinished && (
+      {!isFinished && (
         <motion.div
-          className="fixed inset-0 z-[9999] bg-black flex justify-center overflow-hidden"
+          className="fixed inset-0 z-[9999] bg-black flex justify-center items-center overflow-hidden"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }} 
-          // 背景稍微延迟一点点淡出，确保数字先开始移动
           transition={{ duration: 0.8, ease: "easeInOut", delay: 0.4 }} 
         >
-          <div className="relative w-full h-full" style={{ fontFamily: FONT_FAMILY }}>
-            
-            {/* Left Digit */}
-            <div 
-               className="absolute font-bold leading-none tracking-tighter text-white"
-               style={{
-                 top: `calc(50% - ${vPos}vh)`,
-                 left: '50%',
-                 transform: 'translate(-100%, -50%)',
-                 fontSize: 'clamp(2.5rem, 12vw, 10rem)', 
-                 textAlign: 'right',
-                 transition: 'top 0.6s cubic-bezier(0.22, 1, 0.36, 1)'
-               }}
+          <div className="relative w-full h-full max-w-[1920px]">
+            <svg 
+              viewBox="0 0 100 100" 
+              className="w-full h-full select-none"
+              style={{ fontFamily: FONT_FAMILY }}
             >
-              <motion.div
-                // 核心退场：向上飞出，带拉伸
-                exit={{ y: "-150%", skewY: 5, opacity: 0 }}
-                transition={{ duration: DURATION, ease: REVEAL_EASE }}
+              {/* 左侧数字 */}
+              <motion.text
+                x="48%" 
+                y="50%"
+                textAnchor="end"
+                dominantBaseline="middle"
+                fill="#dbdcdc" // 修改颜色
+                fontSize="24"  // 修改字号 (原 40)
+                fontWeight="bold"
+                initial={{ y: 0 }}
+                animate={{ 
+                  y: -vOffset, 
+                  skewX: 0 
+                }}
+                exit={{ 
+                  y: -150, 
+                  opacity: 0,
+                  skewX: -20 
+                }}
+                transition={{ duration: 0.6, ease: REVEAL_EASE }}
               >
                 {l}
-              </motion.div>
-            </div>
+              </motion.text>
 
-            {/* Right Digit */}
-            <div 
-               className="absolute font-bold leading-none tracking-tighter text-white"
-               style={{
-                 top: `calc(50% + ${vPos}vh)`,
-                 left: '50%',
-                 transform: 'translate(0%, -50%)',
-                 fontSize: 'clamp(2.5rem, 12vw, 10rem)', 
-                 textAlign: 'left',
-                 transition: 'top 0.6s cubic-bezier(0.22, 1, 0.36, 1)'
-               }}
-            >
-              <motion.div
-                // 核心退场：向上飞出，带拉伸
-                exit={{ y: "-150%", skewY: 5, opacity: 0 }}
-                transition={{ duration: DURATION, ease: REVEAL_EASE }}
+              {/* 右侧数字 */}
+              <motion.text
+                x="52%" 
+                y="50%"
+                textAnchor="start"
+                dominantBaseline="middle"
+                fill="#dbdcdc" // 修改颜色
+                fontSize="24"  // 修改字号 (原 40)
+                fontWeight="bold"
+                initial={{ y: 0 }}
+                animate={{ 
+                  y: vOffset,
+                  skewX: 0
+                }}
+                exit={{ 
+                  y: -150,
+                  opacity: 0,
+                  skewX: -20
+                }}
+                transition={{ duration: 0.6, ease: REVEAL_EASE }}
               >
                 {r}
-              </motion.div>
-            </div>
-
+              </motion.text>
+            </svg>
           </div>
         </motion.div>
       )}
