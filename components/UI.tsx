@@ -41,7 +41,8 @@ export const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
       { step: 5, delay: 3000 }, 
     ];
 
-    const timers: NodeJS.Timeout[] = [];
+    // Fix: replaced NodeJS.Timeout[] with any[] to avoid namespace error in browser environments.
+    const timers: any[] = [];
 
     timeline.forEach(({ step: s, delay }) => {
       const timer = setTimeout(() => {
