@@ -1,94 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import { motion, Variants } from 'framer-motion';
+
+import React from 'react';
+import { motion } from 'framer-motion';
 import Hero3DBase from './Hero3DBase';
-import { Preloader } from './UI';
+
+const IMG_GUOYIFENG = 'https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/guoyifeng.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vZ3VveWlmZW5nLnBuZyIsImlhdCI6MTc2OTQ3OTAxOSwiZXhwIjoyMDg0ODM5MDE5fQ.inFQrKRcfQUxPsRFozrXJMMI2B_junWKXzZjfRDTcYM';
+const IMG_PORTFOLIO = 'https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/portfolio.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vcG9ydGZvbGlvLnBuZyIsImlhdCI6MTc2OTQ3OTA5MywiZXhwIjoyMDg0ODM5MDkzfQ.dnwI2TevAR3ODu7Vu4pEf9hcfMFUYp3G6JLv28-kPmU';
 
 interface HeroProps {
-  onLoadingComplete?: () => void;
+  isMuted: boolean;
 }
 
-const Hero: React.FC<HeroProps> = ({ onLoadingComplete }) => {
-  const [loadingFinished, setLoadingFinished] = useState(false);
-  const [heroReady, setHeroReady] = useState(false);
-
-  useEffect(() => {
-    if (heroReady && onLoadingComplete) {
-      onLoadingComplete();
-    }
-  }, [heroReady, onLoadingComplete]);
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { 
-      opacity: 0, 
-      y: 40, 
-      filter: 'blur(10px)' 
-    },
-    show: { 
-      opacity: 1, 
-      y: 0, 
-      filter: 'blur(0px)',
-      transition: { 
-        type: "spring", 
-        stiffness: 80, 
-        damping: 15 
-      }
-    }
-  };
-
+const Hero: React.FC<HeroProps> = ({ isMuted }) => {
   return (
-    <section id="hero" className="relative h-screen w-full bg-transparent overflow-hidden">
-      
-      {!loadingFinished && (
-        <Preloader onComplete={() => setLoadingFinished(true)} />
-      )}
+    <section
+      id="hero"
+      className="relative h-screen w-full overflow-hidden bg-transparent"
+    >
+      {/* === Background Title Layer === */}
+      <div className="absolute inset-0 z-0 flex flex-col items-center pointer-events-none select-none px-[4vw]">
+         <div className="w-full max-w-[3840px] h-full flex flex-col justify-end pb-[10vh] md:justify-center md:pb-0">
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }} 
+               animate={{ opacity: 1, scale: 1 }} 
+               transition={{ duration: 1.2, ease: "easeOut" }}
+               className="flex flex-col w-full gap-4 md:gap-8"
+             >
+                 <img src={IMG_GUOYIFENG} className="w-full h-auto object-contain opacity-95 drop-shadow-2xl" alt="GUO YIFENG" />
+                 <img src={IMG_PORTFOLIO} className="w-full h-auto object-contain opacity-80" alt="PORTFOLIO" />
+             </motion.div>
+         </div>
+      </div>
 
+      {/* === WebGL Layer === */}
       <div className="absolute inset-0 z-10 pointer-events-auto">
-        <Hero3DBase 
-            playIntro={loadingFinished} 
-            onIntroComplete={() => setHeroReady(true)} 
+        <Hero3DBase
+          playIntro={true}
+          onIntroComplete={() => {}}
+          isMuted={isMuted}
         />
       </div>
 
-      {/* 核心修改：增加 max-w-3840px 和绝对居中，确保大屏下与 Header/Grid 对齐 */}
-      <motion.div 
-        className="absolute z-20 pointer-events-none px-[4vw] py-[4vh] flex flex-col justify-between w-full h-full max-w-[3840px] left-1/2 -translate-x-1/2"
-        variants={containerVariants}
-        initial="hidden"
-        animate={heroReady ? "show" : "hidden"}
+      {/* === Foreground UI Layer === */}
+      <motion.div
+        className="absolute bottom-0 w-full z-30 px-[4vw] py-[4vh] flex flex-col justify-end pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 1 }}
       >
-        <div /> 
-
-        <div className="flex justify-between items-end">
-          {/* 左下角 */}
-          <motion.div variants={itemVariants} className="max-w-lg pointer-events-auto mb-10">
-            <div className="pl-4 border-l-2 border-red-600 space-y-2">
-                <h3 className="text-white text-base font-bold">10年广告与游戏行业创意设计师。</h3>
-                <p className="text-white/70 text-xs font-light leading-relaxed text-justify">
-                  核心聚焦两大维度：把控S级项目的视觉质量（定标准）和利用AI工具提高团队产出效率（建流程）。
-                  <br className="hidden md:block"/>
-                  擅长通过梳理视觉规范及搭建AIGC工作流，将个人经验沉淀为可复用的团队资产，有效解决多方协作中的风格统一难题与产能瓶颈。
-                </p>
+        <div className="flex justify-between items-end w-full max-w-[3840px] mx-auto">
+          
+          {/* Left Intro */}
+          <div className="max-w-lg pointer-events-auto">
+            <div className="pl-4 border-l-2 border-red-600 space-y-4">
+              <h3 className="text-white text-base md:text-lg font-bold leading-relaxed">
+                10年广告与游戏行业创意设计师。
+              </h3>
+              <p className="text-white/70 text-xs font-light leading-[2.0] text-justify"> 
+                核心聚焦两大维度：把控S级项目的视觉品质（定标准）与利用AI工具提升团队产出效率（建流程）。热爱游戏行业，擅长通过梳理视觉规范及搭建AIGC工作流，将个人经验沉淀为可复用的团队资产。
+              </p>
             </div>
-          </motion.div>
+          </div>
 
-          {/* 右下角 */}
-          <motion.div variants={itemVariants} className="text-white/50 font-mono text-xs tracking-widest uppercase flex flex-col items-center gap-2 mb-10">
-            <div className="animate-bounce flex flex-col items-center">
-              Scroll for more 
-              <span className="text-red-600 text-lg">↓</span>
+          {/* Right Scroll Hint */}
+          <div className="flex flex-col items-end gap-2 mix-blend-difference">
+            <div className="font-mono text-[10px] text-red-600 animate-bounce">
+              SCROLL TO EXPLORE
             </div>
-          </motion.div>
+            <div className="font-mono text-[10px] text-white/50">
+              2015 - 2025
+            </div>
+          </div>
+
         </div>
       </motion.div>
     </section>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -8,17 +9,22 @@ interface NavItem {
 
 interface GooeyNavProps {
   items: NavItem[];
+  activeSection?: string;
 }
 
-const GooeyNav: React.FC<GooeyNavProps> = ({ items }) => {
+const GooeyNav: React.FC<GooeyNavProps> = ({ items, activeSection }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Determine active index from the current active section ID
+  const activeIndex = items.findIndex(item => item.href === activeSection);
+  // Default to 0 (Home) if no section is active or found
+  const safeActiveIndex = activeIndex === -1 ? 0 : activeIndex;
 
   return (
     <nav className="relative">
       <ul className="flex items-center gap-1 md:gap-2 list-none p-0 m-0">
         {items.map((item, index) => {
-          const isActive = activeIndex === index;
+          const isActive = index === safeActiveIndex;
           const isHovered = hoveredIndex === index;
           
           // Determine if we should show the white pill background for this item
@@ -32,7 +38,6 @@ const GooeyNav: React.FC<GooeyNavProps> = ({ items }) => {
               className="relative px-1"
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
-              onClick={() => setActiveIndex(index)}
             >
               <a
                 href={item.href}

@@ -1,14 +1,15 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import Lenis from 'lenis';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Header from './components/Header';
 import Hero from './components/Hero';
-import { Experience, Values, Marquee, ProjectStack } from './components/Sections';
-import { HeroModel, ParticleBackground } from './components/SceneElements';
-import { LayoutGrid, CustomCursor } from './components/UI';
+import { Experience, Values, ProjectStack, CurvedLoop } from './components/Sections';
+import { ParticleBackground } from './components/SceneElements';
+import { LayoutGrid, CustomCursor, Preloader } from './components/UI';
+import Lightbox from './components/Lightbox';
 import { ExperienceItem } from './types';
 
-// --- 职业旅程数据 ---
 const experienceData: ExperienceItem[] = [
   {
     period: "2020 - 2025",
@@ -36,27 +37,26 @@ const experienceData: ExperienceItem[] = [
   }
 ];
 
-const ipData = [
-  "大话西游", "梦幻西游", 
-  "荒野行动", "暗黑破坏神：不朽", "哈利波特：魔法觉醒", 
-  "率土之滨", "阴阳师IP", "萤火突击", 
-  "巅峰极速", "命运：群星", "燕云十六声", "漫威争锋"
-];
+const ipText = "大话西游 ✦ 梦幻西游 ✦ 荒野行动 ✦ 暗黑破坏神:不朽 ✦ 哈利波特:魔法觉醒 ✦ 率土之滨 ✦ 阴阳师IP ✦ 萤火突击 ✦ 巅峰极速 ✦ 命运:群星 ✦ 燕云十六声 ✦ 漫威争锋";
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const [lightbox, setLightbox] = useState<{ open: boolean; type: 'image' | 'video'; src: string; layoutId?: string } | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
 
+  // Initialize Scroll
   useEffect(() => {
     const lenis = new Lenis({
-        duration: 1.2,
+        duration: 1.5,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         orientation: 'vertical',
-        gestureOrientation: 'vertical',
         smoothWheel: true,
+        touchMultiplier: 2,
     });
+    lenisRef.current = lenis;
 
     if (loading) {
         lenis.stop();
@@ -73,6 +73,7 @@ const App: React.FC = () => {
     return () => lenis.destroy();
   }, [loading]);
 
+  // Parallax Background Effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current || loading) return;
@@ -91,15 +92,65 @@ const App: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [loading]);
 
+  // Audio Logic
+  useEffect(() => {
+    // If video lightbox is active, pause BGM
+    if (lightbox?.open && lightbox.type === 'video') {
+       if (audioRef.current && !audioRef.current.paused) {
+         audioRef.current.pause();
+       }
+    } else {
+       // If lightbox closed (or image only) and not globally muted, play BGM
+       if (!isMuted && !loading && audioRef.current?.paused) {
+         audioRef.current.play().catch(e => console.log('Audio blocked', e));
+       }
+    }
+  }, [lightbox, isMuted, loading]);
+
+  // Global Click to Start Audio (Browser Policy)
+  useEffect(() => {
+      const startAudio = () => {
+          if (!isMuted && audioRef.current?.paused && !loading) {
+              audioRef.current.play().catch(() => {});
+          }
+      };
+      window.addEventListener('click', startAudio);
+      return () => window.removeEventListener('click', startAudio);
+  }, [isMuted, loading]);
+
   const toggleAudio = () => {
     if (audioRef.current) {
       if (isMuted) {
-        audioRef.current.play().catch(e => console.log('Audio blocked', e));
+        // Unmuting
+        if (!lightbox?.open || lightbox?.type !== 'video') {
+           audioRef.current.play().catch(e => console.log('Audio blocked', e));
+        }
       } else {
+        // Muting
         audioRef.current.pause();
       }
       setIsMuted(!isMuted);
     }
+  };
+
+  const handlePreloaderComplete = () => {
+    setLoading(false);
+    if (audioRef.current && isMuted) {
+       // Auto-unmute on load complete logic if desired, or stay muted until user interacts
+       // Current request implies button controls logic.
+       // We'll keep default mute behavior unless changed.
+       // Actually user says "click page arbitrary area to appear music".
+       // So we don't auto-play here aggressively if muted.
+    }
+    if (lenisRef.current) lenisRef.current.start();
+  };
+
+  const handleOpenLightbox = (type: 'image' | 'video', src: string, layoutId?: string) => {
+      setLightbox({ open: true, type, src, layoutId });
+  };
+
+  const handleCloseLightbox = () => {
+      setLightbox(null);
   };
 
   return (
@@ -124,36 +175,52 @@ const App: React.FC = () => {
       <LayoutGrid />
       <CustomCursor />
       
-      <audio ref={audioRef} loop src="https://assets.mixkit.co/music/preview/mixkit-sci-fi-drone-ambience-2708.mp3" />
+      <audio 
+        ref={audioRef} 
+        loop 
+        src="https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/1769487780568-w12444-b8b1e2971a5b79fb.mp3?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vMTc2OTQ4Nzc4MDU2OC13MTI0NDQtYjhiMWUyOTcxYTViNzlmYi5tcDMiLCJpYXQiOjE3Njk0ODk5OTUsImV4cCI6MjA4NDg0OTk5NX0.HpB-vFnDOOgrQRBPy_8Zxv-kfNfR2Y_qyD7QYzTEmcI" 
+      />
+
+      <Lightbox 
+        isOpen={!!lightbox?.open} 
+        type={lightbox?.type || 'image'} 
+        src={lightbox?.src || ''} 
+        onClose={handleCloseLightbox}
+        layoutId={lightbox?.layoutId}
+      />
+
+      <AnimatePresence mode="wait">
+        {loading && <Preloader onComplete={handlePreloaderComplete} />}
+      </AnimatePresence>
 
       <motion.div
         className="fixed top-0 left-0 w-full z-50 pointer-events-none"
         initial={{ opacity: 0, y: -20 }}
         animate={!loading ? { opacity: 1, y: 0 } : {}}
-        transition={{ type: "spring", stiffness: 80, damping: 15, delay: 0.05 }}
+        transition={{ type: "spring", stiffness: 80, damping: 15, delay: 0.5 }}
       >
          <div className="pointer-events-auto">
             <Header isMuted={isMuted} onToggleAudio={toggleAudio} />
          </div>
       </motion.div>
 
-      <main className="relative z-10 w-full text-start flex flex-col items-start">
-        <Hero onLoadingComplete={() => setLoading(false)} />
-        
-        <section id="experience" className="w-full relative z-20">
-            <Experience items={experienceData} />
-        </section>
+      {!loading && (
+        <main className="relative z-10 w-full text-start flex flex-col items-start">
+            <Hero isMuted={isMuted} />
+            
+            <section id="experience" className="w-full relative z-20">
+                <Experience items={experienceData} />
+            </section>
 
-        <div className="w-full bg-black/0">
-            <Marquee items={ipData} />
-        </div>
+            <div className="w-full bg-black/0 py-4">
+                <CurvedLoop marqueeText={ipText} baseVelocity={1} />
+            </div>
 
-        <Values />
-        
-        {/* 全屏堆叠容器 */}
-        <ProjectStack works={[]} />
-
-      </main>
+            <Values isMuted={isMuted} />
+            
+            <ProjectStack works={[]} onOpenLightbox={handleOpenLightbox} />
+        </main>
+      )}
     </div>
   );
 };

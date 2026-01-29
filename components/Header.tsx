@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Mail, MessageCircle, Volume2, VolumeX } from 'lucide-react';
@@ -19,10 +20,39 @@ const navItems = [
 const Header: React.FC<HeaderProps> = ({ isMuted, onToggleAudio }) => {
   const [scrolled, setScrolled] = useState(false);
   const [isWeChatHovered, setIsWeChatHovered] = useState(false);
+  const [activeSection, setActiveSection] = useState('#hero');
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+
+      // Scroll Spy Logic
+      const sections = navItems.map(item => item.href.substring(1));
+      let current = '';
+
+      for (const id of sections) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          // Check if element is at least partially visible and near the top/middle of viewport
+          // We prioritize the last section that satisfies the condition in DOM order if checking from top,
+          // but here we just check if the top is above the middle of screen.
+          if (rect.top <= window.innerHeight * 0.5) {
+             current = '#' + id;
+          }
+        }
+      }
+      
+      if (current) {
+        setActiveSection(current);
+      } else if (window.scrollY < 100) {
+        // Fallback for very top
+        setActiveSection('#hero');
+      }
+    };
+
     window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check on mount
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -41,42 +71,55 @@ const Header: React.FC<HeaderProps> = ({ isMuted, onToggleAudio }) => {
     >
       <div className="w-full max-w-[3840px] mx-auto px-[4vw] py-4 flex items-center justify-between">
         
-        {/* Logo - 已替换链接 */}
         <div className="flex-none z-20">
-          <a href="#hero" onClick={handleLogoClick} className="block">
+          <motion.a 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            href="#hero" 
+            onClick={handleLogoClick} 
+            className="block"
+          >
             <img 
-              src="https://osjktzwgjlluqjifhxpa.supabase.co/storage/v1/object/sign/protfolio/GYF_LOGO.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xNTg5OTEyYS1lYTBlLTRhOTYtYTIzZC1iY2RmMmM2ZDNhNTIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm90Zm9saW8vR1lGX0xPR08ucG5nIiwiaWF0IjoxNzY4ODk5NjkyLCJleHAiOjIwODQyNTk2OTJ9.1BtN5HlJSEz2hGrud--2P8mEwyAUkxB9SXNdrymaKxs" 
+              src="https://cdn.jsdelivr.net/gh/gabriel334425-lgtm/gabriel@4abf8aa142ee4a43ed00a9b5db3b606efa8e9db4/GYF_logo2.png" 
               alt="GYF Logo" 
               className="h-10 md:h-14 w-auto object-contain brightness-200 cursor-pointer"
             />
-          </a>
+          </motion.a>
         </div>
 
-        {/* Gooey Navigation - Center */}
         <div className="hidden lg:block absolute left-1/2 -translate-x-1/2">
-          <GooeyNav items={navItems} />
+          <GooeyNav items={navItems} activeSection={activeSection} />
         </div>
 
-        {/* Tools - Right */}
         <div className="flex items-center gap-5 z-20">
-          {/* BGM Toggle */}
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={onToggleAudio}
             className="text-white/50 hover:text-white transition-all p-2 rounded-full hover:bg-white/5 group"
             title="BGM Toggle"
           >
-            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} className="text-white animate-pulse" />}
-          </button>
+            <AnimatePresence mode="wait">
+              {isMuted ? (
+                <motion.div key="mute" initial={{ opacity: 0, rotate: -45 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
+                  <VolumeX size={18} />
+                </motion.div>
+              ) : (
+                <motion.div key="unmute" initial={{ opacity: 0, rotate: -45 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
+                  <Volume2 size={18} className="text-white" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.button>
 
-          {/* WeChat */}
           <div 
             className="relative"
             onMouseEnter={() => setIsWeChatHovered(true)}
             onMouseLeave={() => setIsWeChatHovered(false)}
           >
-            <button className="text-white/50 hover:text-white transition-all p-2 rounded-full hover:bg-white/5">
+            <motion.button whileHover={{ scale: 1.1 }} className="text-white/50 hover:text-white transition-all p-2 rounded-full hover:bg-white/5">
               <MessageCircle size={18} />
-            </button>
+            </motion.button>
             <AnimatePresence>
               {isWeChatHovered && (
                 <motion.div 
@@ -98,21 +141,21 @@ const Header: React.FC<HeaderProps> = ({ isMuted, onToggleAudio }) => {
             </AnimatePresence>
           </div>
 
-          {/* Tel */}
-          <a 
+          <motion.a 
+            whileHover={{ scale: 1.1 }}
             href="tel:18390810208"
             className="text-white/50 hover:text-white transition-all p-2 rounded-full hover:bg-white/5 hidden sm:block"
           >
             <Phone size={18} />
-          </a>
+          </motion.a>
 
-          {/* Mail */}
-          <a 
+          <motion.a 
+            whileHover={{ scale: 1.1 }}
             href="mailto:408179683@qq.com"
             className="text-white/50 hover:text-white transition-all p-2 rounded-full hover:bg-white/5"
           >
             <Mail size={18} />
-          </a>
+          </motion.a>
         </div>
       </div>
     </motion.nav>
